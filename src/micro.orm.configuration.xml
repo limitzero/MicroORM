@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<configuration>
+
+	<configSections>
+		<section name="micro.orm" type="MicroORM.Environment.DatabaseConfigurationSectionHandler, MicroORM" />
+	</configSections>
+
+	<micro.orm>
+		<aliases>
+			<!-- this entry below uses SSPI for authentication for SQL Server -->
+			<alias name="CONTOSO" server=".\SQLExpress" database="contoso" />
+			
+			<!-- this entry below uses full authentication for SQL Server -->
+			<alias name="some other name" server="some server" database="some database" username="{user name to access database}" password="{password to access database}" />
+		</aliases>
+	</micro.orm>
+
+</configuration>

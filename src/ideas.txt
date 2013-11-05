@@ -1,0 +1,236 @@
+﻿usage of data access
+
+using(var txn = SessionFactory.BeginTransaction())
+using(var cars_session = SessionFactory.OpenSession("CARS"))
+{
+    try
+    {
+       var contract = cars_session.CreateQuery<Contract>()
+	                    .Join<Order>(o=>o.Id, c=>c.OrderId, JoinType.Left)
+	                    .Where(c=>c.Id == 4)
+                        .Criteria(CriteriaSelection.Equals<Contract>(c=>c.Id, 4))
+                        .UniqueResult<Customer>();
+
+       // do something with the object
+       cars_session.Save(contract); 
+
+       txn.Complete();
+    }
+    catch(Exception ex)
+    {}
+}
+
+Resulting Query:
+select top 1 contract.* 
+join order on order.orderid = contract.orderid
+from contract 
+where 
+contract.Id = 4
+
+
+var department = session.Get<Department>(1);
+var instructor = department.CreateInstructor();
+instructor.Name = "mozart"; 
+
+session.Save(department);
+
+Entity Graph:
+    (1) update department set ... where id = 1;
+    (1a) set parent entity on child for insert...
+    (2) insert into instructor (name, departmentid) values ("einestein", 1)
+
+Ex:
+
+public class Customer
+{
+    public int Id {get; set;}
+    public string FirstName {get; set;}
+    public string LastName {get; set;}
+
+    [References(typeof(Order)]
+    public Order Order {get; set;}
+}
+
+public class Order
+{
+    public Customer Customer {get; set;}
+
+    public int Id {get; set;}
+    public string OrderNumber {get; set;}
+
+    public Order()
+    {}
+
+    public Order(Customer customer)
+    {
+        this.Customer = customer;
+    }
+}
+
+Fulfilling the relationship a Customer zero or one Order, and an Order should exist without a Customer...
+
+
+For selecting the customer, we also want the order object to be lazy loaded. In order to do this, 
+the SQL statements should look like:
+
+ select c.id, c.firstname, c.lastname from customer c where c.id = ?  => loads the customer object
+
+ when the order object is "touched", for the first time, it should lazy load and update the customer object 
+ with the hydrated order object by parent reference id
+
+ select o.id, o.ordernumber from order where o.customerid = ? 
+
+
+ For inserts, this will be a little different, we first have to insert the parent entity and 
+ use the corresponding parent id to cascade to the children objects.
+
+ (1) insert the entity and grab the new id sequence number 
+ insert into customers (firstname, lastname) values (?, ?); SELECT SCOPE_IDENTITY AS ID;
+ (2) use the parent's new identity value to populate the child objects
+ insert into orders (ordernumber, customerid) values (?, ?); SELECT SCOPE_IDENTITY AS ID;
+
+
+ Ex: 
+ private void CascadeInserts<TEntity>(TEntity parent)
+ {
+    // issue insert for parent:    
+    var tableinfo = this.MetadataStore.GetTableInfo<TEntity>();
+    var insertAction = new InsertAction<TEntity(....)
+    insertAction.Insert(parent);
+
+    this.CascadeInsertsForReferences<TEntity>(parent, tableinfo);
+ }
+
+ private void CascadeInsertsForReferences<TEntity>(TEntity parent, TableInfo parentTableInfo)
+ {
+    foreach(var referenceColumn in parentTableInfo.ReferenceColumns)
+    {
+        var referenceTableInfo = this.MetadataStore.GetTableInfo(referenceColumn.Column.ProperyType);
+        var insertActionForChild = new InsertActionForChild<TEntity>(....);
+        insertActionForChild(parent, referenceTableInfo);
+    }
+ }
+
+ How about we parse the entity graph just before inserts and deletes?
+
+ var graph = new EntityGraph(session, metadatastore, connection).ParseForInsert(entity);
+
+ this will emit the following statements 
+
+ private void UpsertEntity(entity)
+ {
+   
+ }
+
+ private bool IsEligibleForCascadeInserts<TEntity>(TEntity entity)
+ {
+    var references = this.FindReferencesFor(entity); 
+    var collections = this.FindCollectionsFor(entity); 
+    return (references.Count > 0 || collections.Count > 0);
+ }
+
+
+ private ICollection<object> FindReferencesFor<TEntity>(TEntity entity)
+ {
+    var references = new List<object>();
+    var tableinfo = this.MetadataStore.GetTableInfo<TEntity>(); 
+    
+    foreach(var referceColumnInfo in tableinfo.ReferenceColumns)
+    {
+        var property = entity.GetType().GetProperty(referenceColumnInfo.Column.Name);
+        object reference = property.GetValue(entity, null);
+        references.Add(reference);          
+    }
+
+    return references;
+ }
+
+ private ICollection<IEnumerable> FindCollectionsFor<TEntity>(TEntity entity)
+ {
+    var collections = new List<IEnumerable>();
+    var tableinfo = this.MetadataStore.GetTableInfo<TEntity>(); 
+    
+    foreach(var collectionColumnInfo in tableinfo.CollectionColumns)
+    {
+        var property = entity.GetType().GetProperty(collectionColumnInfo.Column.Name);
+        object reference = property.GetValue(entity, null);
+
+        if(object != null) 
+          references.Add(reference as IEnumerable);
+    }
+
+    return references;
+ }
+
+ public class ModelBuilder : IModelBuilder
+ {
+    public ICollection<TableInfo> Tables {get; private set;}
+
+    public ModelBuilder(IMetadataStore metadatastore)
+    {}
+    
+    public void Build(params Assembly[] assemblies)
+    {
+        
+    }
+    
+    private ICollection<ProperyInfo> FindAllPropertiesOnEntity(Type entity)
+    {
+       
+    }
+
+    private ICollection<Type> FindAllEntitiesWithPrimaryKey(Assembly assembly)
+    {
+        var entities = (from type in assembly.GetExportedTypes()
+                        let tableAttr = type.GetCustomAttributes(typeof(TableAttribute), false);
+                        where type.IsClass == true 
+                        && type.IsAbstract == false 
+                        && tableAttr.Length > 0
+                        select type).ToList().Distinct();
+        return entities;
+    }
+
+    
+    private bool IsComponent(Type entity)
+    {
+        var tableAttribute = entity.GetCustomeAttributes(typeof(TableAttribute), false);
+        var hasReferenceAttribute = (from match in entity.GetProperties()
+                                     let reference = match.GetCustomAttributes(typeof(ReferenceAttribute), false)
+                                     where reference.Length > 0)
+    }
+   
+ }
+
+
+
+
+ var cascadeInsertAction = new CascadingInsertOperation()
+ cascadeInsertAction.Insert(entity);
+ 
+ 
+ Using multiple databases
+ ----------------------
+ 
+ can do something like this 
+ 
+ <micro.orm>
+	<alias name="AdventureWorks" username="" password="" />
+	<alias name="Northwind" username="" password="" />
+ <micro.orm> 
+
+ then we can open sessions like this
+
+using(var scope = new TransactionScope())
+using(var northWindSession = SessionFactory.OpenSessionViaAlias("Northwind"))
+using(var advWorksSession = SessionFactory.OpenSessionViaAlias("AdventureWorks"))
+{
+	// do some stuff in both sessions and 
+	try
+	{
+		scope.Complete(); 
+	}
+	catch(Exception e)
+	{
+		
+	}
+}

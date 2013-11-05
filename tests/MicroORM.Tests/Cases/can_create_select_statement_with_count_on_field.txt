@@ -1,0 +1,3 @@
+﻿select 
+count_of_account_number = count([Accounts].[nAccountNumber]) 
+from [Accounts] (nolock)

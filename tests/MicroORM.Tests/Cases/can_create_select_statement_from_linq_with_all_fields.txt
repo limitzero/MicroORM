@@ -1,0 +1,7 @@
+﻿select 
+[Accounts].[AccountId],
+[Accounts].[nAccountNumber],
+[Accounts].[nDescription],
+[Accounts].[firstname],
+[Accounts].[lastname] 
+from [Accounts] where [Accounts].[nAccountNumber] = @nAccountNumber

@@ -1,0 +1,7 @@
+﻿select top 100 
+[Accounts].[AccountId], 
+[Accounts].[nAccountNumber], 
+[Accounts].[nDescription], 
+[Accounts].[firstname], 
+[Accounts].[lastname] 
+from [Accounts] (nolock)
