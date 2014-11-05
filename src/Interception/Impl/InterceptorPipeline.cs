@@ -160,7 +160,7 @@ namespace MicroORM.Interception.Impl
 
 		private static IEnumerable<T> ResolveForInterceptor<T>()
 		{
-			return (from match in MicroORM.Configuration.Instance.Interceptors
+			return (from match in MicroORM.Configuration.Impl.Configuration.Instance.Interceptors
 			        where typeof (T).IsAssignableFrom(match.GetType())
 			        select (T) Activator.CreateInstance(match.GetType()))
 				.ToList().Distinct();

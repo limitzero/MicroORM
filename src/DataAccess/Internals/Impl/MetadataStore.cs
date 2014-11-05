@@ -9,13 +9,13 @@ namespace MicroORM.DataAccess.Internals.Impl
 {
 	public class MetadataStore : IMetadataStore
 	{
-		private IDictionary<Type, TableInfo> tableInfoCache;
+		private readonly IDictionary<Type, TableInfo> _tableInfoCache;
 
 		public IDictionary<Type, List<PropertyInfo>> Entities { get; private set; }
 
 		public MetadataStore()
 		{
-			this.tableInfoCache = new Dictionary<Type, TableInfo>();
+			this._tableInfoCache = new Dictionary<Type, TableInfo>();
 			this.Entities = new Dictionary<Type, List<PropertyInfo>>();
 		}
 
@@ -84,12 +84,12 @@ namespace MicroORM.DataAccess.Internals.Impl
 
 			if (entity.IsProxy()) theType = entity.BaseType;
 
-			if (this.tableInfoCache.TryGetValue(child, out tableInfo))
+			if (this._tableInfoCache.TryGetValue(child, out tableInfo))
 				return tableInfo;
 
 			tableInfo = new TableInfo(child, theType, this);
 
-			this.tableInfoCache.Add(child, tableInfo);
+			this._tableInfoCache.Add(child, tableInfo);
 
 			return tableInfo;
 		}
@@ -107,12 +107,12 @@ namespace MicroORM.DataAccess.Internals.Impl
 
 			if (entity.IsProxy()) theType = entity.BaseType;
 
-			if (this.tableInfoCache.TryGetValue(theType, out tableInfo))
+			if (this._tableInfoCache.TryGetValue(theType, out tableInfo))
 				return tableInfo;
 
 			tableInfo = new TableInfo(theType, this);
 
-			this.tableInfoCache.Add(theType, tableInfo);
+			this._tableInfoCache.Add(theType, tableInfo);
 
 			return tableInfo;
 		}
@@ -122,8 +122,8 @@ namespace MicroORM.DataAccess.Internals.Impl
 			if (this.Entities.ContainsKey(tableInfo.Entity) == false)
 				this.Entities.Add(tableInfo.Entity, new List<PropertyInfo>());
 
-			if (this.tableInfoCache.ContainsKey(tableInfo.Entity) == false)
-				this.tableInfoCache.Add(tableInfo.Entity, tableInfo);
+			if (this._tableInfoCache.ContainsKey(tableInfo.Entity) == false)
+				this._tableInfoCache.Add(tableInfo.Entity, tableInfo);
 		}
 
 		public void AddEntity(Type entity)

@@ -12,9 +12,9 @@ namespace MicroORM.Tests.Features
 
 		public BaseSQLTestFixture()
 		{
-			MicroORM.Configuration.Instance.DialectProvider<SQLServerDialectProvider>(
-				new SQLServerDialectConnectionProvider(@".\SqlExpress", "contoso"));
-			this.SessionFactory = MicroORM.Configuration.Instance.BuildSessionFactory(this.GetType().Assembly);
+            //MicroORM.Configuration.Instance.DialectProvider<SQLServerDialectProvider>(
+            //    new SQLServerDialectConnectionProvider(@".\SqlExpress", "contoso"));
+            //this.SessionFactory = MicroORM.Configuration.Instance.BuildSessionFactory(this.GetType().Assembly);
 		}
 
 		public virtual void Dispose()

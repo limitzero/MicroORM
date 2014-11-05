@@ -1,19 +1,36 @@
 using System;
 using MicroORM.DataAccess;
 using MicroORM.Tests.Domain.Models;
-using MicroORM.Tests.Domain.Models.NonMapped;
 using Xunit;
+using Course = MicroORM.Tests.Domain.Models.Mapped.Course;
 using Student = MicroORM.Tests.Domain.Models.Mapped.Student;
 using Department = MicroORM.Tests.Domain.Models.Mapped.Department;
+using Instructor = MicroORM.Tests.Domain.Models.Mapped.Instructor;
 
 namespace MicroORM.Tests.Features.EntityMaps
 {
-	public class EntityMapTests : BaseSQLTestFixture
+	public class EntityMapTests : IDisposable
 	{
-		[Fact]
+	    private ISessionFactory _factory;
+	    private const string Connection =@"Data Source=.\SQLEXPRESS;Initial Catalog=contoso;Integrated Security=SSPI";
+
+	    public EntityMapTests()
+	    {
+	        _factory = Configuration.Impl.Configuration.Instance.
+	            BuildSessionFactory(this.GetType().Assembly);
+	    }
+
+	    public void Dispose()
+	    {
+            if(_factory != null)
+                _factory.Dispose();
+	        _factory = null;
+	    }
+
+	    [Fact]
 		public void can_use_entity_map_for_defining_entity_to_data_table_mapping()
 		{
-			using (var session = SessionFactory.OpenSession())
+			using (var session = _factory.OpenSession(Connection))
 			using (var txn = session.BeginTransaction())
 			{
 				var student = new Student
@@ -48,29 +65,41 @@ namespace MicroORM.Tests.Features.EntityMaps
 		[Fact]
 		public void can_populate_parent_collection_lazily_on_select()
 		{
-			using (var session = SessionFactory.OpenSession())
-			{
-				var department = session.Get<Department>(1);
-				Assert.NotNull(department);
+            using ( var session = _factory.OpenSession(Connection) )
+            {
+                var department = new Department();
+                department.Name = "Math";
+                department.Number = "M100";
+                department.Description = "Mathematics";
+
+                var course = department.CreateCourse("101", "Introduction to Geometry",
+                    "Teaches basic concepts and theory of geometry.");
+
+                var anInstructor = department.CreateInstructor();
+                anInstructor.Name.FirstName = "Joe";
+                anInstructor.Name.LastName = "Smith"; 
+
+                session.Save(department);
+
+                var fromDb = session.Get<Department>(department.Id);
 
 				// touching the instructors collection causes the lazy load:
-				foreach (var instructor in department.Instructors)
+                foreach ( var instructor in fromDb.Instructors )
 				{
-					System.Diagnostics.Debug.WriteLine(string.Format("{0} {1} {2}",
+					System.Diagnostics.Debug.WriteLine("Instructor: {0} {1} {2}",
 					                                                 instructor.Id,
 					                                                 instructor.Name.FirstName,
-					                                                 instructor.Name.LastName));
+					                                                 instructor.Name.LastName);
 				}
 
-				var count = department.Instructors.Count;
-				Assert.True(count > 0);
+				Assert.Equal(department.Instructors.Count,fromDb.Instructors.Count);
 			}
 		}
 
 		[Fact]
 		public void can_populate_component_properties_on_entity_from_insert()
 		{
-			using (var session = SessionFactory.OpenSession())
+            using ( var session = _factory.OpenSession(Connection) )
 			using (var txn = session.BeginTransaction())
 			{
 				var department = session.Get<Department>(1);
@@ -78,11 +107,8 @@ namespace MicroORM.Tests.Features.EntityMaps
 				instructor.ChangeDepartment(department);
 
 				// "Name" is the component on instructor
-				instructor.Name = new Name
-				                  	{
-				                  		FirstName = "test_component_from_entity_map",
-				                  		LastName = "test_component_from_entity_map"
-				                  	};
+				instructor.ChangeName("test_component_from_entity_map",
+				                  	     "test_component_from_entity_map");
 
 				session.Save(department);
 
@@ -98,11 +124,11 @@ namespace MicroORM.Tests.Features.EntityMaps
 		[Fact]
 		public void can_find_entity_by_query_when_entity_is_defined_by_mapping_class()
 		{
-			using (var session = this.SessionFactory.OpenSession())
+            using ( var session = _factory.OpenSession(Connection) )
 			{
 				var department = session.CreateQueryFor<Department>()
 					.Select(SelectionOptions.AllFrom<Department>())
-					.CreateCriteria(Restrictions.Like<Department>(d => d.Description, "under"))
+					.CreateCriteria(Restrictions.Like<Department>(d => d.Description, "math"))
 					.SingleOrDefault();
 
 				Assert.NotNull(department);

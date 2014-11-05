@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace MicroORM.DataAccess.Internals.Impl
@@ -9,7 +10,7 @@ namespace MicroORM.DataAccess.Internals.Impl
 
 		public SessionCache()
 		{
-			this.cache = new Dictionary<Type, IDictionary<object, object>>();
+			this.cache = new ConcurrentDictionary<Type, IDictionary<object, object>>();
 		}
 
 		public bool TryFind<TEntity>(object id, out TEntity entity) where TEntity : class
@@ -38,8 +39,8 @@ namespace MicroORM.DataAccess.Internals.Impl
 			if (this.cache.ContainsKey(typeof (TEntity)) == false)
 			{
 				// create the identity map for the instances:
-				var references = new Dictionary<object, object>();
-				references.Add(id, entity);
+				var references = new ConcurrentDictionary<object, object>();
+				references.TryAdd(id, entity);
 				this.cache[typeof (TEntity)] = references;
 			}
 			else

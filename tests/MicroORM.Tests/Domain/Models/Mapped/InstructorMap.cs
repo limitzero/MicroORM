@@ -1,6 +1,4 @@
-using System;
 using MicroORM.Mapping;
-using MicroORM.Tests.Domain.Models.NonMapped;
 
 namespace MicroORM.Tests.Domain.Models.Mapped
 {
@@ -12,7 +10,12 @@ namespace MicroORM.Tests.Domain.Models.Mapped
 
 		public virtual Name Name { get; set; }
 
-		/// <summary>
+	    public Instructor()
+	    {
+            this.Name = new Name();
+	    }
+
+	    /// <summary>
 		/// Sample business rule of how an instructor can be 
 		/// changed to a different department.
 		/// </summary>
@@ -21,13 +24,21 @@ namespace MicroORM.Tests.Domain.Models.Mapped
 		{
 			this.Department = department;
 		}
+
+	    public virtual void ChangeName(string firstName, string lastName)
+	    {
+            if(this.Name == null)
+                this.Name = new Name();
+
+            this.Name.Change(firstName, lastName);
+	    }
 	}
 
 	public class InstructorMap : EntityMap<Instructor>
 	{
 		public InstructorMap()
 		{
-			TableName = "Instructors";
+			TableName = "Instructor";
 			HasPrimaryKey(pk => pk.Id, "instructorId");
 			HasReference(r => r.Department);
 			HasComponent(c => c.Name,

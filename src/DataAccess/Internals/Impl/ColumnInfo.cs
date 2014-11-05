@@ -12,6 +12,7 @@ namespace MicroORM.DataAccess.Internals.Impl
 		public PropertyInfo Column { get; protected set; }
 		public DbType DbType { get; protected set; }
 		public bool IsNullable { get; private set; }
+        public bool IsLazyLoaded { get; set; }
 
 		public ColumnInfo(Type entity, PropertyInfo column, string dataColumnName)
 		{

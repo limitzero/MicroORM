@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using MicroORM.Mapping;
-using MicroORM.Tests.Domain.Models.NonMapped;
 
 namespace MicroORM.Tests.Domain.Models.Mapped
 {
@@ -16,13 +12,18 @@ namespace MicroORM.Tests.Domain.Models.Mapped
 		public virtual Classification Classification { get; set; }
 
 		public virtual Name Name { get; set; }
+
+	    public Student()
+	    {
+            this.Name = new Name();
+	    }
 	}
 
 	public class StudentMap : EntityMap<Student>
 	{
 		public StudentMap()
 		{
-			TableName = "Students";
+			TableName = "Student";
 			HasPrimaryKey(p => p.Id, "studentId");
 			HasColumn(c => c.EnrollmentDate, "enrollmentdate");
 			HasColumn(c => c.Classification, "classification");

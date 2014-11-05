@@ -4,6 +4,7 @@ using System.Data.SqlClient;
 using MicroORM.DataAccess.Extensions;
 using MicroORM.DataAccess.Hydrator;
 using MicroORM.DataAccess.Internals;
+using MicroORM.Dialects;
 
 namespace MicroORM.DataAccess.Actions
 {
@@ -13,8 +14,9 @@ namespace MicroORM.DataAccess.Actions
 		private readonly IHydrator hydrator;
 
 		public StoredProcedureToListAction(IMetadataStore metadataStore,
-		                                   IHydrator hydrator, SqlConnection connection) :
-		                                   	base(metadataStore, default(TEntity), connection)
+		   IHydrator hydrator, IDbConnection connection, 
+            IDialect dialect) 
+		    : base(metadataStore, default(TEntity), connection, dialect)
 		{
 			this.hydrator = hydrator;
 		}

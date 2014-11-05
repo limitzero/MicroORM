@@ -1,14 +1,17 @@
 using System;
-using System.Data.SqlClient;
+using System.Collections.Concurrent;
 using System.Linq;
 using MicroORM.DataAccess.Internals;
 using MicroORM.DataAccess.Internals.Impl;
+using MicroORM.Dialects;
 
 namespace MicroORM
 {
-	public class SessionFactory : ISessionFactory
+	internal class SessionFactory : ISessionFactory
 	{
 		private readonly IMetadataStore metadataStore;
+	    private bool _disposed;
+        private ConcurrentBag<ISession> _sessions;
 
 		public SessionFactory(IMetadataStore metadataStore)
 		{
@@ -16,23 +19,33 @@ namespace MicroORM
 			{
 				this.metadataStore = metadataStore;
 			}
+
+            _sessions = new ConcurrentBag<ISession>();
 		}
 
 		public ISession OpenSession()
 		{
-			var connectionString = MicroORM.Configuration.Instance.ConnectionProvider.GetConnectionString();
-			var connection = new SqlConnection(connectionString);
-			return new Session(connection, this.metadataStore);
+            throw new NotImplementedException();
+            //var connectionString = MicroORM.Configuration.Instance.ConnectionProvider.GetConnectionString();
+            //var connection = new SqlConnection(connectionString);
+            //return new Session(connection, this.metadataStore);
 		}
 
-		public ISession OpenSession(string connection)
+		public ISession OpenSession(string connectionString)
 		{
-			var cxn = new SqlConnection(connection);
-			return new Session(cxn, this.metadataStore);
+		    var dialectFactory = new DialectFactory();
+		    var dialect = dialectFactory.Create(connectionString);
+
+		    var connection = dialect.CreateConnection(connectionString);
+
+            return new Session(connection, this.metadataStore, dialect);
 		}
 
 		public ISession OpenSessionViaAlias(string alias)
 		{
+            throw new NotImplementedException();
+
+            /*
 			var databaseAlias = (from item in MicroORM.Configuration.Instance.ExternalDatabaseSettings
 			                     where item.Alias.ToLower().Trim().Equals(alias.ToLower().Trim())
 			                     select item).FirstOrDefault();
@@ -63,6 +76,45 @@ namespace MicroORM
 
 			var cxn = new SqlConnection(builder.ConnectionString);
 			return new Session(cxn, this.metadataStore);
+             */
 		}
+
+	    public void Dispose()
+	    {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+	    }
+
+	    protected virtual void Dispose(bool disposing)
+	    {
+	        if (_disposed) return;
+
+	        if (disposing)
+	        {
+	            if (this._sessions.Any())
+	            {
+	                foreach (var session in _sessions)
+	                {
+	                    try
+	                    {
+	                        DisposeOfSession(session);
+	                    }
+	                    catch
+	                    {
+	                        // ok..connection should be closed by data provider after execution
+	                    }
+	                }
+	                this._sessions = null;
+	            }
+
+	            _disposed = true;
+	        }
+	    }
+
+        private void DisposeOfSession(ISession session)
+        {
+            if ( session != null )
+                session.Dispose();
+        }
 	}
 }

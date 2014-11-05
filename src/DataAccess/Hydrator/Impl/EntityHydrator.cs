@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Data.SqlClient;
+using System.Data;
 using System.Linq;
 using System.Reflection;
 using Castle.DynamicProxy;
-using LinqExtender.Abstraction;
 using MicroORM.DataAccess.Extensions;
 using MicroORM.DataAccess.Internals;
 using MicroORM.DataAccess.Internals.Impl;
@@ -26,7 +25,7 @@ namespace MicroORM.DataAccess.Hydrator.Impl
 			this.generator = new ProxyGenerator();
 		}
 
-		public TEntity HydrateEntity<TEntity>(SqlCommand command) where TEntity : class
+        public TEntity HydrateEntity<TEntity>(IDbCommand command) where TEntity : class
 		{
 			IDictionary<string, object> values = new Dictionary<string, object>();
 
@@ -34,8 +33,6 @@ namespace MicroORM.DataAccess.Hydrator.Impl
 			{
 				using (var reader = command.ExecuteReader())
 				{
-					if (!reader.HasRows) return default(TEntity);
-
 					reader.Read();
 					values = GetValuesFromCurrentRow(reader);
 				}
@@ -44,7 +41,7 @@ namespace MicroORM.DataAccess.Hydrator.Impl
 			return CreateEntityFromValues<TEntity>(values);
 		}
 
-		public IEnumerable<TEntity> HydrateEntities<TEntity>(SqlCommand command) where TEntity : class
+        public IEnumerable<TEntity> HydrateEntities<TEntity>(IDbCommand command) where TEntity : class
 		{
 			var rows = new List<IDictionary<string, object>>();
 			var entities = new List<TEntity>();
@@ -69,7 +66,7 @@ namespace MicroORM.DataAccess.Hydrator.Impl
 		}
 
 		public void UpdateEntity(Type targetPropertyType, Type targetToUpdate,
-		                         object entityInstance, SqlCommand command)
+            object entityInstance, IDbCommand command)
 		{
 			Type targetChildType = null;
 			var instanceType = entityInstance.GetType().IsProxy()
@@ -117,28 +114,28 @@ namespace MicroORM.DataAccess.Hydrator.Impl
 			}
 		}
 
-		public void InsertEntity<TEntity>(TEntity entity, SqlCommand command)
-		{
-			int id = 0;
-
+        public void InsertEntity<TEntity>(TEntity entity, IDbCommand command)
+        {
+            object id = null;
+           
 			if (command.Connection != null)
 			{
 				var newRowId = command.ExecuteScalar();
 
 				if (newRowId != DBNull.Value)
 				{
-					id = (int) newRowId;
+					id = newRowId;
 				}
 			}
 
-			if (id > 0)
+			if (id != null)
 			{
 				var tableinfo = this.MetadataStore.GetTableInfo<TEntity>();
 				entity.GetType().GetProperty(tableinfo.PrimaryKey.Column.Name).SetValue(entity, id, null);
 			}
 		}
 
-		private IDictionary<string, object> GetValuesFromCurrentRow(SqlDataReader dataReader)
+		private IDictionary<string, object> GetValuesFromCurrentRow(IDataReader dataReader)
 		{
 			var values = new Dictionary<string, object>();
 
@@ -152,6 +149,8 @@ namespace MicroORM.DataAccess.Hydrator.Impl
 
 		private TEntity CreateEntityFromValues<TEntity>(IDictionary<string, object> values) where TEntity : class
 		{
+		    if (values.Any() == false) return default(TEntity);
+
 			// create the entity using the first instance of parameter-less constructor:
 			var constructor = typeof (TEntity)
 				.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
@@ -197,7 +196,7 @@ namespace MicroORM.DataAccess.Hydrator.Impl
 		}
 
 		private static void SetRegularColumns<TEntity>(TEntity entity,
-		                                               IEnumerable<ColumnInfo> columns, IDictionary<string, object> values)
+		    IEnumerable<ColumnInfo> columns, IDictionary<string, object> values)
 		{
 			foreach (var column in columns)
 			{
@@ -225,7 +224,7 @@ namespace MicroORM.DataAccess.Hydrator.Impl
 		}
 
 		private void SetComponentColumns<TEntity>(TEntity entity,
-		                                          IEnumerable<ColumnInfo> columns, IDictionary<string, object> values)
+            IEnumerable<ColumnInfo> columns, IDictionary<string, object> values)
 		{
 			foreach (var column in columns)
 			{
@@ -318,7 +317,7 @@ namespace MicroORM.DataAccess.Hydrator.Impl
 			// single entity associations:
 			foreach (var reference in tableInfo.References)
 			{
-				if (reference.Column.CanRead)
+				if (reference.Column.CanRead )
 				{
 					potentialLazyProperties.Add(reference.Column.Name);
 				}

@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
-using System.IO;
-using System.Linq;
+using System.Data;
 using System.Text;
 using LinqExtender;
 using LinqExtender.Ast;
@@ -13,6 +11,7 @@ using MicroORM.DataAccess.Internals;
 using MicroORM.DataAccess.Internals.Impl;
 using MicroORM.DataAccess.LazyLoading;
 using MicroORM.DataAccess.Querying.Impl;
+using MicroORM.Dialects;
 using ExpressionVisitor = MicroORM.DataAccess.Querying.Impl.ExpressionVisitor;
 
 namespace MicroORM.DataAccess.Querying
@@ -21,8 +20,9 @@ namespace MicroORM.DataAccess.Querying
 	{
 		private readonly IMetadataStore _metadataStore;
 		private readonly IHydrator _hydrator;
-		private readonly SqlConnection _connection;
-		private readonly StringBuilder _builder;
+        private readonly IDbConnection _connection;
+	    private readonly IDialect _dialect;
+	    private readonly StringBuilder _builder;
 		private readonly StringWriterReader _buffer;
 		private readonly TableInfo _tableInfo;
 		private readonly IDictionary<string, object> _parameters;
@@ -30,13 +30,15 @@ namespace MicroORM.DataAccess.Querying
 		private Expression _currentExpression;
 
 		public QueryContext(IMetadataStore metadataStore,
-		                    IHydrator hydrator,
-		                    SqlConnection connection)
+            IHydrator hydrator,
+		    IDbConnection connection, 
+            IDialect dialect)
 		{
 			_metadataStore = metadataStore;
 			_hydrator = hydrator;
 			_connection = connection;
-			this._builder = new StringBuilder();
+		    _dialect = dialect;
+		    this._builder = new StringBuilder();
 			this._buffer = new StringWriterReader(this._builder);
 			this._tableInfo = this._metadataStore.GetTableInfo<T>();
 			this._parameters = new Dictionary<string, object>();
@@ -55,7 +57,7 @@ namespace MicroORM.DataAccess.Querying
 		{
 			this._currentExpression = expression;
 			this.Visit(expression);
-			var listingAction = new ToListAction<T>(this._metadataStore, this._hydrator, this._connection);
+			var listingAction = new ToListAction<T>(this._metadataStore, this._hydrator, this._connection, _dialect);
 			var entities = listingAction.GetListing(this.CurrentStatement, this._parameters);
 			return entities;
 		}

@@ -44,6 +44,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Domain\Models\Mapped\Course.cs" />
     <Compile Include="Features\BaseQueryTestFixture.cs" />
     <Compile Include="Domain\Models\Mapped\DepartmentMap.cs" />
     <Compile Include="Domain\Models\Mapped\InstructorMap.cs" />
@@ -91,6 +92,7 @@
     <Content Include="local.sdf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="schema.sql" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

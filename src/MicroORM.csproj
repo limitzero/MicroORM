@@ -50,6 +50,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ColumnAttribute.cs" />
+    <Compile Include="Configuration\Impl\SessionContainer.cs" />
+    <Compile Include="Configuration\Impl\SessionContainerRegistration.cs" />
+    <Compile Include="Configuration\INamedSession.cs" />
+    <Compile Include="Configuration\ISessionContainer.cs" />
     <Compile Include="DataAccess\Actions\DatabaseAction.cs" />
     <Compile Include="DataAccess\Actions\DeleteAction.cs" />
     <Compile Include="DataAccess\Actions\GetByIdAction.cs" />
@@ -82,9 +86,13 @@
     <Compile Include="DataAccess\Querying\Impl\QueryParameter.cs" />
     <Compile Include="DataAccess\Querying\IQueryByStoredProcedure.cs" />
     <Compile Include="DataAccess\Querying\Impl\QueryByStoredProcedure.cs" />
-    <Compile Include="DataAccess\Extensions\SqlCommandExtensions.cs" />
+    <Compile Include="DataAccess\Extensions\IDbCommandExtensions.cs" />
     <Compile Include="DataAccess\Extensions\TypeExtensions.cs" />
-    <Compile Include="Configuration.cs" />
+    <Compile Include="Configuration\Impl\Configuration.cs" />
+    <Compile Include="Dialects\DialectFactory.cs" />
+    <Compile Include="Dialects\IDialect.cs" />
+    <Compile Include="Dialects\IDialectFactory.cs" />
+    <Compile Include="Dialects\Impl\SQLServer\SqlServerDialect.cs" />
     <Compile Include="Environment\AliasElement.cs" />
     <Compile Include="Environment\AliasElementCollection.cs" />
     <Compile Include="Environment\DatabaseConfigurationSectionHandler.cs" />
@@ -155,7 +163,6 @@
     <Content Include="micro.orm.configuration.xml">
       <SubType>Designer</SubType>
     </Content>
-    <Content Include="readme.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

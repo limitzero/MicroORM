@@ -1,10 +1,11 @@
 using System.Collections.Generic;
-using System.Data.SqlClient;
+using System.Data;
 using MicroORM.DataAccess.Extensions;
 using MicroORM.DataAccess.Hydrator;
 using MicroORM.DataAccess.Internals;
 using MicroORM.DataAccess.LazyLoading;
 using MicroORM.DataAccess.Querying.Impl;
+using MicroORM.Dialects;
 
 namespace MicroORM.DataAccess.Actions
 {
@@ -13,8 +14,10 @@ namespace MicroORM.DataAccess.Actions
 	{
 		private readonly IHydrator hydrator;
 
-		public UniqueResultAction(IMetadataStore metadataStore, IHydrator hydrator, SqlConnection connection) :
-			base(metadataStore, default(TEntity), connection)
+		public UniqueResultAction(IMetadataStore metadataStore, 
+            IHydrator hydrator, IDbConnection connection,
+            IDialect dialect) :
+			base(metadataStore, default(TEntity), connection, dialect)
 		{
 			this.hydrator = hydrator;
 		}

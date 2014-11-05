@@ -1,6 +1,6 @@
 using System;
 using System.Collections;
-using System.Data.SqlClient;
+using System.Data;
 using MicroORM.DataAccess.Extensions;
 using MicroORM.DataAccess.Hydrator;
 using MicroORM.DataAccess.Internals;
@@ -11,14 +11,14 @@ namespace MicroORM.DataAccess.Actions
 	public class InitializeProxyAction : DatabaseAction
 	{
 		public InitializeProxyAction(IMetadataStore metadataStore,
-		                             IHydrator hydrator, SqlConnection connection)
-			: base(metadataStore, hydrator, connection)
+		  IHydrator hydrator, IDbConnection connection)
+		  : base(metadataStore, hydrator, connection)
 		{
 		}
 
 		public void InitializeProxy(object entity, string targetPropertyName, Type targetType)
 		{
-			using (var command = this.CreateCommand())
+            using ( var command = this.Connection.CreateCommand() )
 			{
 				// get the identifier of the parent "entity" and use the 
 				// primary key field value as the key into the child object(s);

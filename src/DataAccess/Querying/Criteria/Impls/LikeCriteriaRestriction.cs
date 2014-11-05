@@ -22,7 +22,7 @@ namespace MicroORM.DataAccess.Querying.Criteria.Impls
 
 			string literal = this.CoalesceValue().Replace("'", string.Empty);
 
-			evaluation = MicroORM.Configuration.Instance.Dialect
+            evaluation = MicroORM.Configuration.Impl.Configuration.Instance.Dialect
 				.BuildParameterAssignment(DialectComparisonOperator.Like, tableName, dataColumnName, literal);
 
 			// string.Format("[{0}].[{1}] like '%{2}%'", tableName, dataColumnName, this.CoalesceValue().Replace("'", string.Empty));

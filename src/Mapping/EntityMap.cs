@@ -15,12 +15,14 @@ namespace MicroORM.Mapping
 	/// <typeparam name="T">Parent entity to be mapped</typeparam>
 	public abstract class EntityMap<T> : IEntityMap where T : class
 	{
+	    private bool _usesLazyLoading;
+
 		/// <summary>
 		/// Gets or sets the name of the data table representing the entity.
 		/// </summary>
 		public string TableName { get; protected set; }
 
-		/// <summary>
+	    /// <summary>
 		/// Gets the column representing the primary key for the entity.
 		/// </summary>
 		public PrimaryKeyInfo PrimaryKey { get; private set; }
@@ -113,17 +115,20 @@ namespace MicroORM.Mapping
 			this.columns.Add(columnInfo);
 		}
 
-		/// <summary>
-		/// This defines a property on an entity as having a set of child objects
-		/// whose parent is this entity (defines the zero to many relationship).
-		/// </summary>
-		/// <param name="column"></param>
-		protected void HasCollection(Expression<Func<T, IEnumerable>> column)
+	    /// <summary>
+	    /// This defines a property on an entity as having a set of child objects
+	    /// whose parent is this entity (defines the zero to many relationship).
+	    /// </summary>
+	    /// <param name="column"></param>
+	    /// <param name="lazyLoaded">Indicator to specify the fetching strategy of the data for the colllection (i.e. populated on hydration (eager fetching = false) or 
+	    /// population on access (lazy fetch)</param>
+	    protected void HasCollection(Expression<Func<T, IEnumerable>> column, bool lazyLoaded = true)
 		{
 			var name = GetPropertyNameForCollectionFromExpression(column);
 			var property = FindPropertyFromPropertyName(typeof (T), name);
 
 			var columnInfo = new ColumnInfo(typeof (T), property, string.Empty);
+	        columnInfo.IsLazyLoaded = lazyLoaded;
 			this.collections.Add(columnInfo);
 		}
 
@@ -180,12 +185,15 @@ namespace MicroORM.Mapping
 		/// entity (defines many to one relationship).
 		/// </summary>
 		/// <param name="column"></param>
-		protected void HasReference(Expression<Func<T, object>> column)
+        /// <param name="lazyLoaded">Indicator to specify the fetching strategy of the data for the colllection (i.e. populated on hydration (eager fetching = false) or 
+        /// population on access (lazy fetch)</param>
+		protected void HasReference(Expression<Func<T, object>> column, bool lazyLoaded = true)
 		{
 			var referencePropertyName = GetPropertyNameFromExpression(column);
 			var referenceProperty = FindPropertyFromPropertyName(typeof (T), referencePropertyName);
 
 			var columnInfo = new ColumnInfo(typeof (T), referenceProperty, referencePropertyName);
+		    columnInfo.IsLazyLoaded = lazyLoaded;
 			this.references.Add(columnInfo);
 		}
 
@@ -196,9 +204,9 @@ namespace MicroORM.Mapping
 		/// <param name="tableName">Name of the join table</param>
 		/// <param name="column">Column name on entity that will participate in many-to-many relationship</param>
 		/// <param name="joinTableColumn">Join table column name on join table entity that will participate in many-to-many relationship</param>
-		protected void HasJoinTable<TJOINTABLE>(string tableName,
+		protected void HasJoinTable<TJointable>(string tableName,
 		                                        Expression<Func<T, object>> column,
-		                                        Expression<Func<TJOINTABLE, object>> joinTableColumn)
+		                                        Expression<Func<TJointable, object>> joinTableColumn)
 		{
 			throw new NotImplementedException("Join table functionality not implemented yet...");
 		}

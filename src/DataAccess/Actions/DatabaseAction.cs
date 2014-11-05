@@ -5,6 +5,7 @@ using System.Text;
 using MicroORM.DataAccess.Hydrator;
 using MicroORM.DataAccess.Internals;
 using MicroORM.DataAccess.Internals.Impl;
+using MicroORM.Dialects;
 
 namespace MicroORM.DataAccess.Actions
 {
@@ -12,21 +13,20 @@ namespace MicroORM.DataAccess.Actions
 	{
 		protected IMetadataStore MetadataStore { get; private set; }
 		protected IHydrator Hydrator { get; private set; }
-		protected SqlConnection Connection { get; private set; }
+		protected IDbConnection Connection { get; private set; }
 
 		protected DatabaseAction(IMetadataStore metadataStore,
-		                         IHydrator hydrator,
-		                         SqlConnection connection)
+		    IHydrator hydrator,
+		    IDbConnection connection)
 		{
 			this.MetadataStore = metadataStore;
 			this.Hydrator = hydrator;
 			Connection = connection;
 		}
 
-		protected SqlCommand CreateCommand()
+		protected IDbCommand CreateCommand()
 		{
-			var command = new SqlCommand();
-			command.Connection = this.Connection;
+		    var command = this.Connection.CreateCommand();
 			command.CommandType = CommandType.Text;
 			return command;
 		}
@@ -34,24 +34,25 @@ namespace MicroORM.DataAccess.Actions
 
 	public abstract class DatabaseAction<TEntity>
 	{
-		private readonly SqlConnection connection;
+		private readonly IDbConnection connection;
 		protected IMetadataStore MetadataStore { get; private set; }
 		protected TEntity Entity { get; set; }
+        protected IDialect Dialect { get; private set; }
 
-		protected DatabaseAction(IMetadataStore metadataStore, TEntity entity, SqlConnection connection)
+	    protected DatabaseAction(IMetadataStore metadataStore, TEntity entity, IDbConnection connection, IDialect dialect)
 		{
 			this.connection = connection;
 			this.MetadataStore = metadataStore;
 			Entity = entity;
+		    Dialect = dialect;
 		}
 
-		protected SqlCommand CreateCommand()
-		{
-			var command = new SqlCommand();
-			command.Connection = this.connection;
-			command.CommandType = CommandType.Text;
-			return command;
-		}
+        protected IDbCommand CreateCommand()
+        {
+            var command = this.connection.CreateCommand();
+            command.CommandType = CommandType.Text;
+            return command;
+        }
 
 		protected void DisplayCommandQuery(SqlCommand command)
 		{

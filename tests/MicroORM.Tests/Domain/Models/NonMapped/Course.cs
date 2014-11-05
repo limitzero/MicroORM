@@ -2,7 +2,7 @@
 
 namespace MicroORM.Tests.Domain.Models.NonMapped
 {
-	[Table("Courses")]
+	[Table("Course")]
 	public class Course
 	{
 		[References(typeof (Department))]
