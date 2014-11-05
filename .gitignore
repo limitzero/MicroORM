@@ -1,0 +1,16 @@
+/src/*/obj
+/src/*/bin
+/tests/*/obj
+/tests/*/bin
+*.suo
+_ReSharper.*
+*.csproj.user
+*.[Rr]e[Ss]harper.user
+*.resharper
+*.cache
+*~
+*.swp
+NDependOut
+/build
+/release
+/logs
