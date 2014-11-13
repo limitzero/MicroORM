@@ -1,8 +1,8 @@
 using System;
+using MicroORM.Configuration.Impl;
 using MicroORM.DataAccess;
 using MicroORM.Tests.Domain.Models;
 using Xunit;
-using Course = MicroORM.Tests.Domain.Models.Mapped.Course;
 using Student = MicroORM.Tests.Domain.Models.Mapped.Student;
 using Department = MicroORM.Tests.Domain.Models.Mapped.Department;
 using Instructor = MicroORM.Tests.Domain.Models.Mapped.Instructor;
@@ -16,8 +16,8 @@ namespace MicroORM.Tests.Features.EntityMaps
 
 	    public EntityMapTests()
 	    {
-	        _factory = Configuration.Impl.Configuration.Instance.
-	            BuildSessionFactory(this.GetType().Assembly);
+	         var configuration = new EnvironmentConfiguration();
+             _factory = configuration.BuildSessionFactory(this.GetType().Assembly);
 	    }
 
 	    public void Dispose()

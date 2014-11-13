@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using MicroORM.DataAccess.Querying;
+using MicroORM.DataAccess.Querying.Impl;
 
 namespace MicroORM.Tests.Features
 {

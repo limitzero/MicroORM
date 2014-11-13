@@ -15,8 +15,8 @@ collections on the entity being manipulated.
 
 Ex: Saving a new instance of an entity
 
-using(var scope = new TransactionScope())
 using(var session = SessionFactory.OpenSession())
+using(var txn = session.BeginTransaction())
 {
     var customer = new Customer();
 
@@ -25,15 +25,17 @@ using(var session = SessionFactory.OpenSession())
 
     // let the session figure out whether to insert or update:
     session.SaveOrUpdate(customer); 
-
-    scope.Complete();
+    txn.Commit();
+	
+	var fromDB = session.Get<Customer>(customer.Id);
+	Assert.Equal(customer.Id, fromDB.Id);
 }
 
 
 Ex: Fetching an entity and updating
 
-using(var scope = new TransactionScope())
 using(var session = SessionFactory.OpenSession())
+using(var txn = session.BeginTransaction())
 {
     // fetch the entity by the value in the primary key column:
     var customer = session.Get<Customer>(1):
@@ -43,8 +45,8 @@ using(var session = SessionFactory.OpenSession())
 
     // let the session figure out whether to insert or update:
     session.SaveOrUpdate(customer); 
-
-    scope.Complete();
+	
+    txn.Commit();
 }
 
 Ex: Fetching an entity and updating underlying collections:

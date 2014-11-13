@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq.Expressions;
 using System.Text;
+using MicroORM.Configuration;
 using MicroORM.DataAccess.Actions;
 using MicroORM.DataAccess.Hydrator;
 using MicroORM.DataAccess.Internals;
@@ -21,49 +22,51 @@ namespace MicroORM.DataAccess.Querying.Impl
 {
     public class Query<TParentEntity> : IQuery<TParentEntity> where TParentEntity : class, new()
     {
-        private readonly IDbConnection connection;
+        private readonly IDbConnection _connection;
         private readonly IDialect _dialect;
-        private readonly List<ICriteriaRestriction> criteriaRestrictions;
-        private readonly IDictionary<Type, string> eagerFetchProperties;
-        private readonly List<IGroupByOption> groupingOptions;
-        private readonly IHydrator hydrator;
-        private readonly List<IJoinAction> joinActions = new List<IJoinAction>();
-        private readonly IMetadataStore metadatastore;
-        private readonly List<IOrderOption> orderOptions;
-        private readonly Type parentEntity;
-        private readonly HashSet<QueryParameter> queryParameters;
-        private readonly List<ISelectOption> selectionOptions;
-        private string currentStatement;
+        private readonly IEnvironmentSettings _environment;
+        private readonly List<ICriteriaRestriction> _criteriaRestrictions;
+        private readonly IDictionary<Type, string> _eagerFetchProperties;
+        private readonly List<IGroupByOption> _groupingOptions;
+        private readonly IHydrator _hydrator;
+        private readonly List<IJoinAction> _joinActions = new List<IJoinAction>();
+        private readonly IMetadataStore _metadatastore;
+        private readonly List<IOrderOption> _orderOptions;
+        private readonly Type _parentEntity;
+        private readonly HashSet<QueryParameter> _queryParameters;
+        private readonly List<ISelectOption> _selectionOptions;
+        private string _currentStatement;
 
         public Query(IMetadataStore metadatastore,
             IHydrator hydrator, IDbConnection connection,
-            IDialect dialect)
+            IDialect dialect, IEnvironmentSettings environment)
         {
-            this.metadatastore = metadatastore;
-            this.hydrator = hydrator;
-            this.connection = connection;
+            this._metadatastore = metadatastore;
+            this._hydrator = hydrator;
+            this._connection = connection;
             _dialect = dialect;
-            selectionOptions = new List<ISelectOption>();
-            groupingOptions = new List<IGroupByOption>();
-            orderOptions = new List<IOrderOption>();
-            criteriaRestrictions = new List<ICriteriaRestriction>();
-            queryParameters = new HashSet<QueryParameter>();
-            eagerFetchProperties = new Dictionary<Type, string>();
-            parentEntity = typeof(TParentEntity);
+            _environment = environment;
+            _selectionOptions = new List<ISelectOption>();
+            _groupingOptions = new List<IGroupByOption>();
+            _orderOptions = new List<IOrderOption>();
+            _criteriaRestrictions = new List<ICriteriaRestriction>();
+            _queryParameters = new HashSet<QueryParameter>();
+            _eagerFetchProperties = new Dictionary<Type, string>();
+            _parentEntity = typeof(TParentEntity);
         }
 
         public string CurrentStatement
         {
-            get { return currentStatement; }
+            get { return _currentStatement; }
         }
 
         public IQuery<TParentEntity> JoinOn<TChildEntity>(Expression<Func<TChildEntity, object>> child,
                                                           Expression<Func<TParentEntity, object>> parent)
             where TChildEntity : class, new()
         {
-            var innerJoinAction = new InnerJoinAction<TParentEntity, TChildEntity>(metadatastore);
+            var innerJoinAction = new InnerJoinAction<TParentEntity, TChildEntity>(_metadatastore);
             innerJoinAction.Enqueue(parent, child);
-            joinActions.Add(innerJoinAction);
+            _joinActions.Add(innerJoinAction);
             return this;
         }
 
@@ -71,9 +74,9 @@ namespace MicroORM.DataAccess.Querying.Impl
                                                                Expression<Func<TParentEntity, object>> parent)
             where TChildEntity : class, new()
         {
-            var outerJoinAction = new OuterJoinAction<TParentEntity, TChildEntity>(metadatastore);
+            var outerJoinAction = new OuterJoinAction<TParentEntity, TChildEntity>(_metadatastore);
             outerJoinAction.Enqueue(parent, child);
-            joinActions.Add(outerJoinAction);
+            _joinActions.Add(outerJoinAction);
             return this;
         }
 
@@ -81,9 +84,9 @@ namespace MicroORM.DataAccess.Querying.Impl
                                                               Expression<Func<TParentEntity, object>> parent)
             where TChildEntity : class, new()
         {
-            var leftJoinAction = new LeftJoinAction<TParentEntity, TChildEntity>(metadatastore);
+            var leftJoinAction = new LeftJoinAction<TParentEntity, TChildEntity>(_metadatastore);
             leftJoinAction.Enqueue(parent, child);
-            joinActions.Add(leftJoinAction);
+            _joinActions.Add(leftJoinAction);
             return this;
         }
 
@@ -104,9 +107,9 @@ namespace MicroORM.DataAccess.Querying.Impl
                     currentRestriction = restriction;
                 }
 
-                if ( criteriaRestrictions.Contains(currentRestriction) )
+                if ( _criteriaRestrictions.Contains(currentRestriction) )
                     continue;
-                criteriaRestrictions.Add(currentRestriction);
+                _criteriaRestrictions.Add(currentRestriction);
             }
 
             return this;
@@ -122,10 +125,10 @@ namespace MicroORM.DataAccess.Querying.Impl
         {
             foreach ( ISelectOption selectOption in selections )
             {
-                if ( selectionOptions.Contains(selectOption) )
+                if ( _selectionOptions.Contains(selectOption) )
                     continue;
 
-                selectionOptions.Add(selectOption);
+                _selectionOptions.Add(selectOption);
             }
 
             return this;
@@ -133,10 +136,10 @@ namespace MicroORM.DataAccess.Querying.Impl
 
         public IQuery<TParentEntity> AddOrder<TEntity>(IOrderOption<TEntity> order)
         {
-            if ( orderOptions.Contains(order) )
+            if ( _orderOptions.Contains(order) )
                 return this;
-            metadatastore.AddEntity(typeof(TEntity));
-            orderOptions.Add(order);
+            _metadatastore.AddEntity(typeof(TEntity));
+            _orderOptions.Add(order);
             return this;
         }
 
@@ -144,10 +147,10 @@ namespace MicroORM.DataAccess.Querying.Impl
         {
             foreach ( IGroupByOption selectOption in selections )
             {
-                if ( groupingOptions.Contains(selectOption) )
+                if ( _groupingOptions.Contains(selectOption) )
                     continue;
 
-                groupingOptions.Add(selectOption);
+                _groupingOptions.Add(selectOption);
             }
 
             return this;
@@ -156,10 +159,12 @@ namespace MicroORM.DataAccess.Querying.Impl
         public IEnumerable<TParentEntity> ToList(int maxResults = 100)
         {
             BuildSql(maxResults);
-            metadatastore.AddEntity(typeof(TParentEntity));
+            _metadatastore.AddEntity(typeof(TParentEntity));
 
-            var listingAction = new ToListAction<TParentEntity>(metadatastore, hydrator, connection, _dialect);
-            return listingAction.GetListing(currentStatement, queryParameters);
+            var listingAction = new ToListAction<TParentEntity>(_metadatastore, _hydrator, 
+                _connection, _dialect, _environment);
+
+            return listingAction.GetListing(_currentStatement, _queryParameters);
         }
 
         public IEnumerable<TEntity> ToList<TEntity>(int maxResults = 100) where TEntity : class
@@ -167,20 +172,24 @@ namespace MicroORM.DataAccess.Querying.Impl
             if ( typeof(TEntity) == typeof(TParentEntity) )
                 throw new InvalidOperationException("Can not project " + typeof(TParentEntity).Name + " onto " +
                                                     typeof(TEntity).Name);
-            metadatastore.AddEntity(typeof(TEntity));
+            _metadatastore.AddEntity(typeof(TEntity));
 
-            var listingAction = new ToListAction<TEntity>(metadatastore, hydrator, connection, _dialect);
-            return listingAction.GetListing(currentStatement, queryParameters);
+            var listingAction = new ToListAction<TEntity>(_metadatastore, _hydrator,
+                _connection, _dialect, _environment);
+
+            return listingAction.GetListing(_currentStatement, _queryParameters);
         }
 
         public TParentEntity SingleOrDefault()
         {
-            metadatastore.AddEntity(typeof(TParentEntity));
+            _metadatastore.AddEntity(typeof(TParentEntity));
 
             BuildSql(0);
 
-            var uniqueResultAction = new UniqueResultAction<TParentEntity>(metadatastore, hydrator, connection, _dialect);
-            return uniqueResultAction.GetSingleOrDefaultResult(currentStatement, queryParameters);
+            var uniqueResultAction = new UniqueResultAction<TParentEntity>(_metadatastore, _hydrator, 
+                _connection, _dialect, _environment);
+
+            return uniqueResultAction.GetSingleOrDefaultResult(_currentStatement, _queryParameters);
         }
 
         public TEntity SingleOrDefault<TEntity>() where TEntity : class
@@ -190,12 +199,14 @@ namespace MicroORM.DataAccess.Querying.Impl
                                                     typeof(TEntity).Name +
                                                     ". The projection entity type can not be the same as the entity to be queried.");
 
-            metadatastore.AddEntity(typeof(TEntity));
+            _metadatastore.AddEntity(typeof(TEntity));
 
             BuildSql(0);
 
-            var uniqueResultAction = new UniqueResultAction<TEntity>(metadatastore, hydrator, connection, _dialect);
-            return uniqueResultAction.GetSingleOrDefaultResult(currentStatement, queryParameters);
+            var uniqueResultAction = new UniqueResultAction<TEntity>(_metadatastore, 
+                _hydrator, _connection, _dialect, _environment);
+
+            return uniqueResultAction.GetSingleOrDefaultResult(_currentStatement, _queryParameters);
         }
 
         private void BuildSql(int rowsToReturn = 0)
@@ -207,12 +218,12 @@ namespace MicroORM.DataAccess.Querying.Impl
             BuildRestrictions(builder);
             BuildGroupBy(builder);
             BuildOrderBy(builder);
-            currentStatement = builder.ToString().TrimEnd(System.Environment.NewLine.ToCharArray());
+            _currentStatement = builder.ToString().TrimEnd(System.Environment.NewLine.ToCharArray());
         }
 
         private void BuildSelect(StringBuilder builder, int rowsToReturn = 0)
         {
-            TableInfo tableinfo = metadatastore.GetTableInfo<TParentEntity>();
+            TableInfo tableinfo = _metadatastore.GetTableInfo<TParentEntity>();
             string tableName = tableinfo.TableName;
 
             var fields = new List<string>();
@@ -220,14 +231,14 @@ namespace MicroORM.DataAccess.Querying.Impl
             string selectedFields = string.Empty;
             string separator = ", ";
 
-            if ( selectionOptions.Count == 0 )
+            if ( _selectionOptions.Count == 0 )
                 throw new InvalidOperationException(
                     "In order to return results from a query, a selection option must be indicated for the fields desired. " +
                     "Please use the Select(SelectionOptions.(...)) option on the query object to choose the desired fields for the query.");
 
-            foreach ( ISelectOption selectionOption in selectionOptions )
+            foreach ( ISelectOption selectionOption in _selectionOptions )
             {
-                selectionOption.MetadataStore = metadatastore;
+                selectionOption.MetadataStore = _metadatastore;
                 selectionOption.Build();
 
                 fields.AddRange(selectionOption.Fields);
@@ -272,20 +283,20 @@ namespace MicroORM.DataAccess.Querying.Impl
         {
             var conditions = new List<string>();
 
-            foreach ( ICriteriaRestriction criteriaRestriction in criteriaRestrictions )
+            foreach ( ICriteriaRestriction criteriaRestriction in _criteriaRestrictions )
             {
-                criteriaRestriction.MetadataStore = metadatastore;
+                criteriaRestriction.MetadataStore = _metadatastore;
                 criteriaRestriction.Build();
 
                 if ( typeof(AndCriteriaSelection).IsAssignableFrom(criteriaRestriction.GetType()) )
                 {
                     var andCriteria = criteriaRestriction as AndCriteriaSelection;
-                    new List<QueryParameter>(andCriteria.GetParameters()).ForEach(p => queryParameters.Add(p));
+                    new List<QueryParameter>(andCriteria.GetParameters()).ForEach(p => _queryParameters.Add(p));
                 }
                 else if ( typeof(OrCriteriaSelection).IsAssignableFrom(criteriaRestriction.GetType()) )
                 {
                     var orCriteria = criteriaRestriction as OrCriteriaSelection;
-                    new List<QueryParameter>(orCriteria.GetParameters()).ForEach(p => queryParameters.Add(p));
+                    new List<QueryParameter>(orCriteria.GetParameters()).ForEach(p => _queryParameters.Add(p));
                 }
 
                 conditions.AddRange(criteriaRestriction.Expressions);
@@ -319,7 +330,7 @@ namespace MicroORM.DataAccess.Querying.Impl
 
         private void BuildJoins(StringBuilder builder)
         {
-            joinActions.ForEach(ja => ja.Build(builder));
+            _joinActions.ForEach(ja => ja.Build(builder));
         }
 
         private void BuildGroupBy(StringBuilder builder)
@@ -329,9 +340,9 @@ namespace MicroORM.DataAccess.Querying.Impl
             string selectedFields = string.Empty;
             string separator = ", ";
 
-            foreach ( IGroupByOption groupingOption in groupingOptions )
+            foreach ( IGroupByOption groupingOption in _groupingOptions )
             {
-                groupingOption.MetadataStore = metadatastore;
+                groupingOption.MetadataStore = _metadatastore;
                 groupingOption.Build();
 
                 fields.AddRange(groupingOption.Fields);
@@ -357,9 +368,9 @@ namespace MicroORM.DataAccess.Querying.Impl
             string selectedFields = string.Empty;
             string separator = ", ";
 
-            foreach ( IOrderOption orderOption in orderOptions )
+            foreach ( IOrderOption orderOption in _orderOptions )
             {
-                orderOption.MetadataStore = metadatastore;
+                orderOption.MetadataStore = _metadatastore;
                 orderOption.Build();
                 fields.AddRange(orderOption.Fields);
             }

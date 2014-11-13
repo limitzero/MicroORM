@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using MicroORM.Configuration;
 using MicroORM.DataAccess.Extensions;
 using MicroORM.DataAccess.Hydrator;
 using MicroORM.DataAccess.Internals;
@@ -9,14 +10,15 @@ namespace MicroORM.DataAccess.Actions
 	public class UpdateAction<TEntity> : DatabaseAction<TEntity>
 		where TEntity : class
 	{
-		private readonly IHydrator hydrator;
+		private readonly IHydrator _hydrator;
 
 		public UpdateAction(IMetadataStore metadataStore, 
             TEntity entity, IHydrator hydrator, 
-            IDbConnection connection, IDialect dialect) :
-			base(metadataStore, entity, connection, dialect)
+            IDbConnection connection, IDialect dialect, 
+            IEnvironmentSettings environment) :
+			base(metadataStore, entity, connection, dialect, environment)
 		{
-			this.hydrator = hydrator;
+			this._hydrator = hydrator;
 		}
 
 		public TEntity Update(TEntity entity)
@@ -32,11 +34,12 @@ namespace MicroORM.DataAccess.Actions
 				command.CreateAndAddInputParameterForPrimaryKey(tableInfo, tableInfo.PrimaryKey, entity);
 				command.CreateAndAddInputParametersForColumns(entity, this.MetadataStore);
 				command.CommandText = query;
-				command.DisplayQuery();
 
-				if (this.hydrator != null)
+                this.DisplayCommand(command);
+
+				if (this._hydrator != null)
 				{
-					entity = this.hydrator.HydrateEntity<TEntity>(command);
+					entity = this._hydrator.HydrateEntity<TEntity>(command);
 				}
 
 				return entity;

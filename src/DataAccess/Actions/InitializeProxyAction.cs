@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Data;
+using MicroORM.Configuration;
 using MicroORM.DataAccess.Extensions;
 using MicroORM.DataAccess.Hydrator;
 using MicroORM.DataAccess.Internals;
@@ -11,8 +12,8 @@ namespace MicroORM.DataAccess.Actions
 	public class InitializeProxyAction : DatabaseAction
 	{
 		public InitializeProxyAction(IMetadataStore metadataStore,
-		  IHydrator hydrator, IDbConnection connection)
-		  : base(metadataStore, hydrator, connection)
+		  IHydrator hydrator, IDbConnection connection, IEnvironmentSettings environment)
+		  : base(metadataStore, hydrator, connection, environment)
 		{
 		}
 
@@ -53,7 +54,7 @@ namespace MicroORM.DataAccess.Actions
 
 				command.CommandText = query;
 				command.CreateAndAddInputParameterForPrimaryKey(parent, parent.PrimaryKey, entity);
-				command.DisplayQuery();
+			    this.DisplayCommand(command);
 
 				Hydrator.UpdateEntity(childPropertyType, childType, entity, command);
 			}

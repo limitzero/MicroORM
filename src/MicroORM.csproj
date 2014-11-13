@@ -50,10 +50,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ColumnAttribute.cs" />
-    <Compile Include="Configuration\Impl\SessionContainer.cs" />
-    <Compile Include="Configuration\Impl\SessionContainerRegistration.cs" />
+    <Compile Include="Configuration\IEnvironmentSettings.cs" />
+    <Compile Include="Configuration\Impl\EnvironmentSettings.cs" />
+    <Compile Include="Configuration\Impl\NamedSessionContainer.cs" />
+    <Compile Include="Configuration\Impl\NamedSessionContainerRegistration.cs" />
     <Compile Include="Configuration\INamedSession.cs" />
-    <Compile Include="Configuration\ISessionContainer.cs" />
+    <Compile Include="Configuration\INamedSessionContainer.cs" />
     <Compile Include="DataAccess\Actions\DatabaseAction.cs" />
     <Compile Include="DataAccess\Actions\DeleteAction.cs" />
     <Compile Include="DataAccess\Actions\GetByIdAction.cs" />
@@ -67,7 +69,15 @@
     <Compile Include="DataAccess\Extensions\EnumerableExtensions.cs" />
     <Compile Include="DataAccess\LazyLoading\QueryObjectImpl.cs" />
     <Compile Include="DataAccess\Querying\Impl\ITextReader.cs" />
-    <Compile Include="DataAccess\Querying\QueryContext.cs" />
+    <Compile Include="DataAccess\Querying\IQueryClause.cs" />
+    <Compile Include="DataAccess\Querying\IQueryOver.cs" />
+    <Compile Include="DataAccess\Querying\Joins\Impl\Join.cs" />
+    <Compile Include="DataAccess\Querying\Impl\QueryClause.cs" />
+    <Compile Include="DataAccess\Querying\Impl\QueryContext.cs" />
+    <Compile Include="DataAccess\Querying\Impl\QueryOver.cs" />
+    <Compile Include="DataAccess\Querying\Impl\QueryOverDefinition.cs" />
+    <Compile Include="DataAccess\Querying\Impl\QuerySubClause.cs" />
+    <Compile Include="DataAccess\Querying\Impl\QuerySubClausePrefix.cs" />
     <Compile Include="DataAccess\Restrictions.cs" />
     <Compile Include="DataAccess\GroupByOptions.cs" />
     <Compile Include="DataAccess\Hydrator\IHydrator.cs" />
@@ -88,7 +98,7 @@
     <Compile Include="DataAccess\Querying\Impl\QueryByStoredProcedure.cs" />
     <Compile Include="DataAccess\Extensions\IDbCommandExtensions.cs" />
     <Compile Include="DataAccess\Extensions\TypeExtensions.cs" />
-    <Compile Include="Configuration\Impl\Configuration.cs" />
+    <Compile Include="Configuration\Impl\EnvironmentConfiguration.cs" />
     <Compile Include="Dialects\DialectFactory.cs" />
     <Compile Include="Dialects\IDialect.cs" />
     <Compile Include="Dialects\IDialectFactory.cs" />
@@ -117,6 +127,8 @@
     <Compile Include="DataAccess\OrderOptions.cs" />
     <Compile Include="ISessionFactory.cs" />
     <Compile Include="ITransaction.cs" />
+    <Compile Include="Logging\ConsoleLogger.cs" />
+    <Compile Include="Logging\ILogger.cs" />
     <Compile Include="Mapping\EntityMap.cs" />
     <Compile Include="Mapping\IEntityMap.cs" />
     <Compile Include="PrimaryKeyAttribute.cs" />

@@ -13,8 +13,10 @@ namespace MicroORM.DataAccess.Querying.Criteria.Impls
 
 		public override string CreateEvaluation(string tableName, string dataColumnName)
 		{
-			string evaluation = MicroORM.Configuration.Impl.Configuration.Instance.Dialect
-				.BuildParameterAssignment(DialectComparisonOperator.LessThan, tableName, dataColumnName);
+		    var evaluation = string.Empty; 
+
+			//string evaluation = MicroORM.Configuration.Impl.EnvironmentConfiguration.Instance.Dialect
+			//	.BuildParameterAssignment(DialectComparisonOperator.LessThan, tableName, dataColumnName);
 
 			//string.Format("[{0}].[{1}] < {2}", tableName, dataColumnName, this.CoalesceValue());
 			return evaluation;

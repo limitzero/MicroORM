@@ -35,7 +35,7 @@ namespace MicroORM.DataAccess.Querying.Joins.Impl
 		public StringBuilder Build(StringBuilder builder)
 		{
 			// build join statement exclusive of join type:
-			string join = " [{0}] (nolock) on [{0}].[{1}] = [{2}].[{3}]";
+			string join = " [{0}] on [{0}].[{1}] = [{2}].[{3}]";
 
 			var parentTableInfo = this.MetadataStore.GetTableInfo(typeof (TParentEntity));
 			var childTableInfo = this.MetadataStore.GetTableInfo(typeof (TChildEntity));

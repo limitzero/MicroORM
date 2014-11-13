@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Data;
+using MicroORM.Configuration;
 using MicroORM.DataAccess.Extensions;
 using MicroORM.DataAccess.Hydrator;
 using MicroORM.DataAccess.Internals;
@@ -10,15 +11,15 @@ namespace MicroORM.DataAccess.Actions
     public class StoredProcedureToUniqueResultAction<TEntity> : DatabaseAction<TEntity>
         where TEntity : class
     {
-        private readonly IHydrator hydrator;
+        private readonly IHydrator _hydrator;
 
         public StoredProcedureToUniqueResultAction(IMetadataStore metadataStore,
             IHydrator hydrator,
             IDbConnection connection,
-             IDialect dialect)
-            : base(metadataStore, default(TEntity), connection, dialect)
+             IDialect dialect, IEnvironmentSettings environment)
+            : base(metadataStore, default(TEntity), connection, dialect, environment)
         {
-            this.hydrator = hydrator;
+            this._hydrator = hydrator;
         }
 
         public TEntity GetUniqueResult(string procedure, IDictionary<string, object> parameters)
@@ -30,11 +31,13 @@ namespace MicroORM.DataAccess.Actions
                 command.CommandText = procedure;
                 command.CommandType = CommandType.StoredProcedure;
                 command.CreateParametersFromDictionary(parameters);
-                command.DisplayQuery();
 
-                if ( this.hydrator != null )
+                // command.DisplayQuery();
+                this.DisplayCommand(command);
+
+                if ( this._hydrator != null )
                 {
-                    entity = hydrator.HydrateEntity<TEntity>(command);
+                    entity = _hydrator.HydrateEntity<TEntity>(command);
                 }
             }
 

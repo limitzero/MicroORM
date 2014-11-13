@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Data;
+using MicroORM.Configuration;
 using MicroORM.DataAccess.Extensions;
 using MicroORM.DataAccess.Hydrator;
 using MicroORM.DataAccess.Internals;
@@ -9,73 +10,75 @@ using MicroORM.Dialects;
 
 namespace MicroORM.DataAccess.Actions
 {
-	public class UniqueResultAction<TEntity> : DatabaseAction<TEntity>
-		where TEntity : class
-	{
-		private readonly IHydrator hydrator;
+    public class UniqueResultAction<TEntity> : DatabaseAction<TEntity>
+        where TEntity : class
+    {
+        private readonly IHydrator _hydrator;
 
-		public UniqueResultAction(IMetadataStore metadataStore, 
+        public UniqueResultAction(IMetadataStore metadataStore,
             IHydrator hydrator, IDbConnection connection,
-            IDialect dialect) :
-			base(metadataStore, default(TEntity), connection, dialect)
-		{
-			this.hydrator = hydrator;
-		}
+            IDialect dialect, IEnvironmentSettings environment) :
+            base(metadataStore, default(TEntity), connection, dialect, environment)
+        {
+            this._hydrator = hydrator;
+        }
 
-		public TEntity GetSingleOrDefaultResult(string statement, ICollection<QueryParameter> parameters)
-		{
-			TEntity entity = default(TEntity);
+        public TEntity GetSingleOrDefaultResult(string statement, ICollection<QueryParameter> parameters)
+        {
+            TEntity entity = default(TEntity);
 
-			using (var command = this.CreateCommand())
-			{
-				command.CommandText = statement;
-				command.CreateParametersFromQuery(parameters);
-				command.DisplayQuery();
+            using ( var command = this.CreateCommand() )
+            {
+                command.CommandText = statement;
+                command.CreateParametersFromQuery(parameters);
 
-				if (this.hydrator != null)
-				{
-					entity = hydrator.HydrateEntity<TEntity>(command);
+                // command.DisplayQuery();
+                this.DisplayCommand(command);
 
-					// force lazy loading on hydrated entity (if possible):
-					if (entity != null)
-					{
-						if (typeof (ILazyLoadSpecification).IsAssignableFrom(entity.GetType()))
-						{
-							((ILazyLoadSpecification) entity).IsLazyLoadingEnabled = true;
-						}
-					}
-				}
-			}
+                if ( this._hydrator != null )
+                {
+                    entity = _hydrator.HydrateEntity<TEntity>(command);
 
-			return entity;
-		}
+                    // force lazy loading on hydrated entity (if possible):
+                    if ( entity != null )
+                    {
+                        if ( typeof(ILazyLoadSpecification).IsAssignableFrom(entity.GetType()) )
+                        {
+                            ( (ILazyLoadSpecification)entity ).IsLazyLoadingEnabled = true;
+                        }
+                    }
+                }
+            }
 
-		public TEntity GetSingleOrDefaultResult(string statement, IDictionary<string, object> parameters)
-		{
-			TEntity entity = default(TEntity);
+            return entity;
+        }
 
-			using (var command = this.CreateCommand())
-			{
-				command.CommandText = statement;
-				command.CreateParametersFromDictionary(parameters);
-				command.DisplayQuery();
+        public TEntity GetSingleOrDefaultResult(string statement, IDictionary<string, object> parameters)
+        {
+            TEntity entity = default(TEntity);
 
-				if (this.hydrator != null)
-				{
-					entity = hydrator.HydrateEntity<TEntity>(command);
+            using ( var command = this.CreateCommand() )
+            {
+                command.CommandText = statement;
+                command.CreateParametersFromDictionary(parameters);
+                DisplayCommand(command);
 
-					// force lazy loading on hydrated entity (if possible):
-					if (entity != null)
-					{
-						if (typeof (ILazyLoadSpecification).IsAssignableFrom(entity.GetType()))
-						{
-							((ILazyLoadSpecification) entity).IsLazyLoadingEnabled = true;
-						}
-					}
-				}
-			}
+                if ( this._hydrator != null )
+                {
+                    entity = _hydrator.HydrateEntity<TEntity>(command);
 
-			return entity;
-		}
-	}
+                    // force lazy loading on hydrated entity (if possible):
+                    if ( entity != null )
+                    {
+                        if ( typeof(ILazyLoadSpecification).IsAssignableFrom(entity.GetType()) )
+                        {
+                            ( (ILazyLoadSpecification)entity ).IsLazyLoadingEnabled = true;
+                        }
+                    }
+                }
+            }
+
+            return entity;
+        }
+    }
 }

@@ -10,13 +10,11 @@ using MicroORM.DataAccess.Internals.Impl;
 namespace MicroORM.Mapping
 {
 	/// <summary>
-	/// Creates a mapping for a entity to a datatable.
+	/// Creates a mapping for a entity to a data table.
 	/// </summary>
 	/// <typeparam name="T">Parent entity to be mapped</typeparam>
 	public abstract class EntityMap<T> : IEntityMap where T : class
 	{
-	    private bool _usesLazyLoading;
-
 		/// <summary>
 		/// Gets or sets the name of the data table representing the entity.
 		/// </summary>
@@ -27,37 +25,37 @@ namespace MicroORM.Mapping
 		/// </summary>
 		public PrimaryKeyInfo PrimaryKey { get; private set; }
 
-		private readonly HashSet<ColumnInfo> columns = new HashSet<ColumnInfo>();
+		private readonly HashSet<ColumnInfo> _columns = new HashSet<ColumnInfo>();
 
 		/// <summary>
 		/// Gets the set of columns representing simple data attributes of the entity.
 		/// </summary>
 		public IEnumerable<ColumnInfo> Columns
 		{
-			get { return columns; }
+			get { return _columns; }
 		}
 
-		private readonly HashSet<ColumnInfo> references = new HashSet<ColumnInfo>();
+		private readonly HashSet<ColumnInfo> _references = new HashSet<ColumnInfo>();
 
 		/// <summary>
 		/// Get the set of entities on the parent that refer to other entities with a defined lifecycle.
 		/// </summary>
 		public IEnumerable<ColumnInfo> References
 		{
-			get { return references; }
+			get { return _references; }
 		}
 
-		private readonly HashSet<ColumnInfo> collections = new HashSet<ColumnInfo>();
+		private readonly HashSet<ColumnInfo> _collections = new HashSet<ColumnInfo>();
 
 		/// <summary>
 		/// Get the set of properties that are collections of child entities for parent.
 		/// </summary>
 		public IEnumerable<ColumnInfo> Collections
 		{
-			get { return collections; }
+			get { return _collections; }
 		}
 
-		private readonly HashSet<ColumnInfo> components = new HashSet<ColumnInfo>();
+		private readonly HashSet<ColumnInfo> _components = new HashSet<ColumnInfo>();
 
 		/// <summary>
 		/// Gets the collection of data columns that are entities that do not have a lifecycle 
@@ -65,7 +63,7 @@ namespace MicroORM.Mapping
 		/// </summary>
 		public IEnumerable<ColumnInfo> Components
 		{
-			get { return components; }
+			get { return _components; }
 		}
 
 		/// <summary>
@@ -75,7 +73,7 @@ namespace MicroORM.Mapping
 		protected void HasPrimaryKey(Expression<Func<T, object>> column)
 		{
 			var name = GetPropertyNameFromExpression(column);
-			this.HasPrimaryKey(column, name);
+			HasPrimaryKey(column, name);
 		}
 
 		/// <summary>
@@ -88,7 +86,7 @@ namespace MicroORM.Mapping
 			var name = GetPropertyNameFromExpression(column);
 			var property = FindPropertyFromPropertyName(typeof (T), name);
 			var columnInfo = new PrimaryKeyInfo(typeof (T), property, columnName);
-			this.PrimaryKey = columnInfo;
+			PrimaryKey = columnInfo;
 		}
 
 		/// <summary>
@@ -99,7 +97,7 @@ namespace MicroORM.Mapping
 		protected void HasColumn(Expression<Func<T, object>> column)
 		{
 			var name = GetPropertyNameFromExpression(column);
-			this.HasColumn(column, name);
+			HasColumn(column, name);
 		}
 
 		/// <summary>
@@ -112,7 +110,7 @@ namespace MicroORM.Mapping
 			var name = GetPropertyNameFromExpression(column);
 			var property = FindPropertyFromPropertyName(typeof (T), name);
 			var columnInfo = new ColumnInfo(typeof (T), property, columnName);
-			this.columns.Add(columnInfo);
+			_columns.Add(columnInfo);
 		}
 
 	    /// <summary>
@@ -129,7 +127,7 @@ namespace MicroORM.Mapping
 
 			var columnInfo = new ColumnInfo(typeof (T), property, string.Empty);
 	        columnInfo.IsLazyLoaded = lazyLoaded;
-			this.collections.Add(columnInfo);
+			_collections.Add(columnInfo);
 		}
 
 		/// <summary>
@@ -154,7 +152,7 @@ namespace MicroORM.Mapping
 
 				var columnInfo = new ColumnInfo(typeof (T), componentProperty, dataColumnName);
 
-				this.components.Add(columnInfo);
+				_components.Add(columnInfo);
 			}
 		}
 
@@ -194,7 +192,7 @@ namespace MicroORM.Mapping
 
 			var columnInfo = new ColumnInfo(typeof (T), referenceProperty, referencePropertyName);
 		    columnInfo.IsLazyLoaded = lazyLoaded;
-			this.references.Add(columnInfo);
+			_references.Add(columnInfo);
 		}
 
 		/// <summary>
@@ -220,8 +218,13 @@ namespace MicroORM.Mapping
 		/// <returns></returns>
 		public TableInfo Build(IMetadataStore metadataStore)
 		{
-			var tableInfo = new TableInfo(typeof (T), this.TableName, metadataStore, this.PrimaryKey, this.Columns,
-			                              this.References, this.Collections, this.Components);
+			var tableInfo = new TableInfo(typeof (T), TableName, metadataStore, 
+                PrimaryKey, 
+                Columns,
+			    References, 
+                Collections, 
+                Components);
+
 			return tableInfo;
 		}
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using MicroORM.Configuration;
 using MicroORM.DataAccess.Extensions;
 using MicroORM.DataAccess.Hydrator;
 using MicroORM.DataAccess.Internals;
@@ -15,8 +16,9 @@ namespace MicroORM.DataAccess.Actions
 
         public GetByIdAction(IMetadataStore metadataStore,
             TEntity entity, IHydrator hydrator,
-            IDbConnection connection, IDialect dialect)
-            : base(metadataStore, entity, connection, dialect)
+            IDbConnection connection, IDialect dialect,
+            IEnvironmentSettings environment)
+            : base(metadataStore, entity, connection, dialect, environment)
         {
             _hydrator = hydrator;
         }
@@ -46,7 +48,9 @@ namespace MicroORM.DataAccess.Actions
                 query = tableInfo.AddWhereClauseById(query, id);
                 command.CreateAndAddInputParameterForPrimaryKeyValue(tableInfo, tableInfo.PrimaryKey, id);
                 command.CommandText = query;
-                command.DisplayQuery();
+
+                // command.DisplayQuery();
+                this.DisplayCommand(command);
 
                 if ( _hydrator != null )
                     entity = _hydrator.HydrateEntity<TEntity>(command);

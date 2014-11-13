@@ -2,8 +2,8 @@
 using System.Collections;
 using System.Data;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using LinqExtender;
+using MicroORM.Configuration;
 using MicroORM.DataAccess.Actions;
 using MicroORM.DataAccess.Extensions;
 using MicroORM.DataAccess.Hydrator;
@@ -24,6 +24,7 @@ namespace MicroORM.DataAccess.Internals.Impl
         private IDbConnection _connection;
         private IMetadataStore _metadataStore;
         private readonly IDialect _dialect;
+        private readonly IEnvironmentSettings _environment;
         private IHydrator _hydrator;
         private ISessionCache _sessionCache;
         private IInterceptorPipeline _interceptorPipeline;
@@ -41,12 +42,14 @@ namespace MicroORM.DataAccess.Internals.Impl
             CreateConnectionFromAlias(alias);
         }
 
-        public Session(IDbConnection connection, IMetadataStore metadataStore, IDialect dialect)
+        public Session(IDbConnection connection, IMetadataStore metadataStore,
+            IDialect dialect, IEnvironmentSettings environment)
             : this()
         {
             this._connection = connection;
             this._metadataStore = metadataStore;
             _dialect = dialect;
+            _environment = environment;
             this.InitializeSession(this._metadataStore, this._connection);
         }
 
@@ -72,7 +75,7 @@ namespace MicroORM.DataAccess.Internals.Impl
 
             var getByIdAction = new GetByIdAction<TEntity>(this._metadataStore,
                                                            null, this._hydrator, this._connection,
-                                                           this._dialect);
+                                                           this._dialect, this._environment);
 
             entity = getByIdAction.GetById(id);
 
@@ -97,10 +100,10 @@ namespace MicroORM.DataAccess.Internals.Impl
 
 #if DEBUG
             Type theEntity = entity.GetType().IsProxy() ? entity.GetType().BaseType : entity.GetType();
-            System.Diagnostics.Debug.WriteLine(string.Format("MicroORM : Loaded hydrated entity '{0}' " +
+            _environment.Logger.DebugFormat("MicroORM : Loaded hydrated entity '{0}' " +
                                                              "from session cache with primay key identifier '{1}'.",
                                                              theEntity.FullName,
-                                                             id.ToString()));
+                                                             id.ToString());
 #endif
 
             return entity;
@@ -140,7 +143,7 @@ namespace MicroORM.DataAccess.Internals.Impl
 
             UpsertEntityCollections(tableInfo, entity);
 
-             EnableLazyLoading(entity);
+            EnableLazyLoading(entity);
         }
 
         public void Delete<TEntity>(TEntity entity) where TEntity : class
@@ -164,7 +167,7 @@ namespace MicroORM.DataAccess.Internals.Impl
             var tableInfo = this._metadataStore.GetTableInfo<TEntity>();
 
             var deleteAction = new DeleteAction<TEntity>(this._metadataStore,
-                entity, this._connection, this._dialect);
+                entity, this._connection, this._dialect, this._environment);
 
             Action proceed = () => deleteAction.Delete(entity);
 
@@ -179,18 +182,29 @@ namespace MicroORM.DataAccess.Internals.Impl
         public IQuery<T> CreateQueryFor<T>() where T : class, new()
         {
             this._metadataStore.AddEntity(typeof(T));
-            return new Querying.Impl.Query<T>(this._metadataStore, this._hydrator, this._connection, _dialect);
+            return new Querying.Impl.Query<T>(this._metadataStore, this._hydrator,
+                this._connection, _dialect, _environment);
         }
 
-        public IQueryContext<T> QueryOver<T>() where T : class, new()
+        public IQueryOver<T> QueryOver<T>() where T : class, new()
+        {
+            var query = new QueryOver<T>(_metadataStore,
+                _hydrator, _connection, _dialect, _environment);
+            return query;
+        }
+
+        [Obsolete]
+        private IQueryContext<T> QueryOverImpl<T>() where T : class, new()
         {
             this._metadataStore.AddEntity(typeof(T));
-            return new QueryContext<T>(this._metadataStore, this._hydrator, this._connection, _dialect);
+            return new QueryContext<T>(this._metadataStore, this._hydrator,
+                this._connection, _dialect, _environment);
         }
 
         public IQueryByStoredProcedure ExecuteProcedure()
         {
-            return new QueryByStoredProcedure(this._metadataStore, this._hydrator, this._connection, this._dialect);
+            return new QueryByStoredProcedure(this._metadataStore,
+                this._hydrator, this._connection, this._dialect, _environment);
         }
 
         public ITransaction BeginTransaction()
@@ -205,13 +219,14 @@ namespace MicroORM.DataAccess.Internals.Impl
                 return;
 #if DEBUG
             Type theEntity = entity.GetType().IsProxy() ? entity.GetType().BaseType : entity.GetType();
-            System.Diagnostics.Debug.WriteLine(string.Format("MicroORM : Lazy loading property '{0}' " +
-                                                             "with property type '{1}' on entity '{2}'.",
-                                                             targetPropertyName,
-                                                             targetType.FullName,
-                                                             theEntity.FullName));
+            _environment.Logger.DebugFormat("MicroORM : Lazy loading property '{0}' " +
+                                                              "with property type '{1}' on entity '{2}'.",
+                                                              targetPropertyName,
+                                                              targetType.FullName,
+                                                              theEntity.FullName);
 #endif
-            var intializeProxyAction = new InitializeProxyAction(this._metadataStore, this._hydrator, this._connection);
+            var intializeProxyAction = new InitializeProxyAction(this._metadataStore, this._hydrator,
+                this._connection, _environment);
             intializeProxyAction.InitializeProxy(entity, targetPropertyName, targetType);
         }
 
@@ -236,7 +251,7 @@ namespace MicroORM.DataAccess.Internals.Impl
 
             this._hydrator = new EntityHydrator(this._metadataStore, this);
             this._sessionCache = new SessionCache();
-            this._interceptorPipeline = new InterceptorPipeline();
+            this._interceptorPipeline = new InterceptorPipeline(_environment);
         }
 
         private static void DisableLazyLoading<TEntity>(TEntity entity)
@@ -274,7 +289,7 @@ namespace MicroORM.DataAccess.Internals.Impl
         {
             var tableInfo = _metadataStore.GetTableInfo(entity.GetType());
             var collections = tableInfo.Collections.Where(c => !c.IsLazyLoaded).ToList();
-            var references  =  tableInfo.References.Where(c => !c.IsLazyLoaded).ToList();
+            var references = tableInfo.References.Where(c => !c.IsLazyLoaded).ToList();
 
             foreach ( var collection in collections )
             {
@@ -300,7 +315,8 @@ namespace MicroORM.DataAccess.Internals.Impl
                 // update:
                 var updateAction =
                     new UpdateAction<TEntity>(this._metadataStore, entity,
-                        this._hydrator, this._connection, this._dialect);
+                        this._hydrator, this._connection,
+                        this._dialect, this._environment);
 
                 Action proceed = () => updateAction.Update(entity);
 
@@ -314,7 +330,8 @@ namespace MicroORM.DataAccess.Internals.Impl
                 // insert:
                 var insertAction =
                     new InsertAction<TEntity>(this._metadataStore, entity,
-                        this._hydrator, this._connection, this._dialect);
+                        this._hydrator, this._connection,
+                        this._dialect, this._environment);
 
                 Action proceed = () => insertAction.Insert(entity);
 

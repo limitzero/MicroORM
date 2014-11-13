@@ -11,7 +11,7 @@ namespace MicroORM.Tests.Domain.Models.Mapped
 		}
 
         /// <summary>
-        /// Ideally this should be a private constructor as the department 
+        /// Ideally this should be a non-public constructor as the department 
         /// is the only one designated to create a course...
         /// </summary>
         /// <param name="department"></param>

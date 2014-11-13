@@ -1,7 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
+using MicroORM.Configuration;
 using MicroORM.DataAccess.Actions;
 using MicroORM.DataAccess.Hydrator;
 using MicroORM.DataAccess.Internals;
@@ -11,19 +10,21 @@ namespace MicroORM.DataAccess.Querying.Impl
 {
 	public class QueryByStoredProcedure : IQueryByStoredProcedure
 	{
-		private IMetadataStore metadatastore;
-		private IHydrator hydrator;
-		private IDbConnection connection;
+		private readonly IMetadataStore _metadatastore;
+		private readonly IHydrator hydrator;
+		private readonly IDbConnection connection;
 	    private readonly IDialect _dialect;
+	    private readonly IEnvironmentSettings _environment;
 
 	    public QueryByStoredProcedure(IMetadataStore metadatastore, 
             IHydrator hydrator, IDbConnection connection,
-            IDialect dialect)
+            IDialect dialect, IEnvironmentSettings environment)
 		{
-			this.metadatastore = metadatastore;
+			this._metadatastore = metadatastore;
 			this.hydrator = hydrator;
 			this.connection = connection;
 		    _dialect = dialect;
+	        _environment = environment;
 		}
 
 		public TProjection SingleOrDefault<TProjection>(string procedure) where TProjection : class, new()
@@ -34,8 +35,11 @@ namespace MicroORM.DataAccess.Querying.Impl
 		public TProjection SingleOrDefault<TProjection>(string procedure, IDictionary<string, object> parameters)
 			where TProjection : class, new()
 		{
-			this.metadatastore.AddEntity(typeof (TProjection));
-            var action = new StoredProcedureToUniqueResultAction<TProjection>(this.metadatastore, this.hydrator, this.connection, _dialect);
+			this._metadatastore.AddEntity(typeof (TProjection));
+
+            var action = new StoredProcedureToUniqueResultAction<TProjection>(
+                this._metadatastore, this.hydrator, this.connection, _dialect, _environment);
+
 			return action.GetUniqueResult(procedure, parameters);
 		}
 
@@ -47,8 +51,11 @@ namespace MicroORM.DataAccess.Querying.Impl
 		public IEnumerable<TProjection> ToList<TProjection>(string procedure, IDictionary<string, object> parameters)
 			where TProjection : class, new()
 		{
-			this.metadatastore.AddEntity(typeof (TProjection));
-            var action = new StoredProcedureToListAction<TProjection>(this.metadatastore, this.hydrator, this.connection, _dialect);
+			this._metadatastore.AddEntity(typeof (TProjection));
+
+            var action = new StoredProcedureToListAction<TProjection>(
+                    this._metadatastore, this.hydrator, this.connection, _dialect, _environment);
+
 			return action.GetList(procedure, parameters);
 		}
 	}

@@ -1,5 +1,5 @@
 ﻿using System.Data;
-using System.Data.SqlClient;
+using MicroORM.Configuration;
 using MicroORM.DataAccess.Extensions;
 using MicroORM.DataAccess.Internals;
 using MicroORM.Dialects;
@@ -11,8 +11,8 @@ namespace MicroORM.DataAccess.Actions
 	{
 		public DeleteAction(IMetadataStore metadataStore, 
             TEntity entity, IDbConnection connection, 
-            IDialect dialect) :
-			base(metadataStore, entity, connection, dialect)
+            IDialect dialect, IEnvironmentSettings environment) :
+			base(metadataStore, entity, connection, dialect, environment)
 		{
 		}
 
@@ -34,7 +34,9 @@ namespace MicroORM.DataAccess.Actions
 				command.CommandText = query;
                 command.CreateAndAddInputParameterForPrimaryKey(tableinfo, tableinfo.PrimaryKey, entity);
 				//command.CreateAndAddInputParameter(tableinfo.PrimaryKey.DbType, tableinfo.PrimaryKey.GetPrimaryKeyName(), id);
-				command.DisplayQuery();
+				//command.DisplayQuery();
+
+                this.DisplayCommand(command);
 
 				if (command.Connection != null)
 					command.ExecuteNonQuery();

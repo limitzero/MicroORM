@@ -130,25 +130,6 @@ namespace MicroORM.DataAccess.Extensions
 			}
 		}
 
-		public static void DisplayQuery(this IDbCommand command)
-		{
-#if DEBUG
-			var builder = new StringBuilder();
-			builder.Append(command.CommandText).AppendLine(";");
-
-			for (int index = 0; index < command.Parameters.Count; index++)
-			{
-			    var parameter = command.Parameters[index] as DbParameter;
-                
-				builder.Append(string.Format("[{0} = {1}], ",
-				       string.Concat("@", parameter.ParameterName), parameter.Value));
-			}
-
-			string parameters = builder.ToString().TrimEnd(string.Concat(", ").ToCharArray());
-			System.Diagnostics.Debug.WriteLine(string.Concat("MicroORM : ", parameters));
-#endif
-		}
-
 		private static void TryAddParameterToCollection(IDbCommand command, IDbDataParameter parameter)
 		{
 			bool isFound = false;

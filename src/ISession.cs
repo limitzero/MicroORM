@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Text;
-using LinqExtender;
 using MicroORM.DataAccess.Querying;
 
 namespace MicroORM
@@ -57,14 +56,14 @@ namespace MicroORM
 		/// </summary>
 		/// <typeparam name="T">Entity to query over and return results for.</typeparam>
 		/// <returns></returns>
-		IQuery<T> CreateQueryFor<T>() where T : class, new();
+		// IQuery<T> CreateQueryFor<T>() where T : class, new();
 
-		/// <summary>
-		/// This will create a simple query criteria via LINQ for an entity for retrieving data w/o JOIN support.
+        /// <summary>
+		/// This will create a simple query criteria via LINQ for an entity for retrieving data.
 		/// </summary>
 		/// <typeparam name="T">Entity to query over and return results for.</typeparam>
 		/// <returns></returns>
-		IQueryContext<T> QueryOver<T>() where T : class, new();
+        IQueryOver<T> QueryOver<T>() where T : class, new();
 
 		/// <summary>
 		/// This will allow for the execution of a stored procedure against the persistence store.

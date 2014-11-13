@@ -17,14 +17,16 @@ namespace MicroORM.DataAccess.Querying.Criteria.Impls
 
 			if (this.CurrentValue == null)
 			{
-                evaluation = MicroORM.Configuration.Impl.Configuration.Instance.Dialect
-					.BuildParameterAssignment(DialectComparisonOperator.NotEqualToNull, tableName, dataColumnName);
+                //evaluation = MicroORM.Configuration.Impl.EnvironmentConfiguration.Instance.Dialect
+                //    .BuildParameterAssignment(DialectComparisonOperator.NotEqualToNull, tableName, dataColumnName);
+
 				// string.Format("[{0}].[{1}] is not null", tableName, dataColumnName);
 			}
 			else
 			{
-                evaluation = MicroORM.Configuration.Impl.Configuration.Instance.Dialect
-					.BuildParameterAssignment(DialectComparisonOperator.NotEquals, tableName, dataColumnName);
+                //evaluation = MicroORM.Configuration.Impl.EnvironmentConfiguration.Instance.Dialect
+                //    .BuildParameterAssignment(DialectComparisonOperator.NotEquals, tableName, dataColumnName);
+
 				// string.Format("[{0}].[{1}] <> {2}", tableName, dataColumnName, this.CoalesceValue());
 			}
 

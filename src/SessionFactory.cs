@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
+using MicroORM.Configuration;
 using MicroORM.DataAccess.Internals;
 using MicroORM.DataAccess.Internals.Impl;
 using MicroORM.Dialects;
@@ -9,21 +10,33 @@ namespace MicroORM
 {
 	internal class SessionFactory : ISessionFactory
 	{
-		private readonly IMetadataStore metadataStore;
+	    private readonly IEnvironmentSettings _environment;
+	    private readonly IMetadataStore _metadataStore;
 	    private bool _disposed;
         private ConcurrentBag<ISession> _sessions;
 
-		public SessionFactory(IMetadataStore metadataStore)
-		{
-			if (metadataStore != null)
-			{
-				this.metadataStore = metadataStore;
-			}
+	    public SessionFactory() : this(null, new MetadataStore())
+	    {
+	    }
 
-            _sessions = new ConcurrentBag<ISession>();
+	    public SessionFactory(IMetadataStore metadataStore)
+            :this(null, metadataStore)
+		{
 		}
 
-		public ISession OpenSession()
+	    public SessionFactory(IEnvironmentSettings environment, 
+            IMetadataStore metadataStore)
+	    {
+	        _environment = environment;
+	        _metadataStore = metadataStore;
+
+            if(_metadataStore == null)
+                _metadataStore = new MetadataStore();
+
+            _sessions = new ConcurrentBag<ISession>();
+	    }
+
+	    public ISession OpenSession()
 		{
             throw new NotImplementedException();
             //var connectionString = MicroORM.Configuration.Instance.ConnectionProvider.GetConnectionString();
@@ -38,7 +51,7 @@ namespace MicroORM
 
 		    var connection = dialect.CreateConnection(connectionString);
 
-            return new Session(connection, this.metadataStore, dialect);
+            return new Session(connection, this._metadataStore, dialect, _environment);
 		}
 
 		public ISession OpenSessionViaAlias(string alias)

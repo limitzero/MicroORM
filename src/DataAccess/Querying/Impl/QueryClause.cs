@@ -3,16 +3,19 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using MicroORM.Configuration;
 using MicroORM.DataAccess.Actions;
 using MicroORM.DataAccess.Hydrator;
 using MicroORM.DataAccess.Internals;
+using MicroORM.DataAccess.Internals.Impl;
 using MicroORM.Dialects;
 
 namespace MicroORM.DataAccess.Querying.Impl
 {
-    internal class QueryClause<TParent, TEntity> : QueryClause, IQueryClause<TParent, TEntity> 
+    internal class QueryClause<TParent, TEntity> : QueryClause, IQueryClause<TParent, TEntity>
         where TParent : class
         where TEntity : class
     {
@@ -41,7 +44,7 @@ namespace MicroORM.DataAccess.Querying.Impl
             _environment = environment;
         }
 
-        public  IQueryClause<TParent, TEntity> And<TOther>(Expression<Func<TOther, bool>> clause)
+        public IQueryClause<TParent, TEntity> And<TOther>(Expression<Func<TOther, bool>> clause)
             where TOther : class
         {
             var subClause = new QuerySubClause<TOther>(QuerySubClausePrefix.And, this.MetaDataStore, clause);
@@ -205,7 +208,7 @@ namespace MicroORM.DataAccess.Querying.Impl
                     case TypeCode.Object:
                         // ReSharper disable OperatorIsCanBeUsed
                         if ( c.Value.GetType() == typeof(Guid) )
-                            // ReSharper restore OperatorIsCanBeUsed
+                        // ReSharper restore OperatorIsCanBeUsed
                         {
                             // force to ensure type
                             var g = new Guid(c.Value.ToString());
@@ -258,28 +261,50 @@ namespace MicroORM.DataAccess.Querying.Impl
 
             if ( m.Method.Name == "StartsWith" && m.Arguments.Count == 1 )
             {
-                var constantExpression = m.Object as ConstantExpression;
-                if ( constantExpression != null )
+                if ( m.NodeType == ExpressionType.Call )
                 {
-                    _criteria.Append("(");
-                    Visit(m.Arguments[0]);
-                    _criteria.Append(" Like '");
-                    _criteria.Append(constantExpression.Value.ToString());
-                    _criteria.Append("%')");
+                    if ( m.Object.NodeType == ExpressionType.MemberAccess )
+                    {
+                        var memberAccess = m.Object as MemberExpression;
+                        var memberName = memberAccess.Member.Name;
+                        ParameterExpression parameterExpression = null;
+                        ExtractParameterExpression(memberAccess, out parameterExpression);
+
+                        var alias = AcquireAlias(parameterExpression.Type, memberName);
+
+                        _criteria.Append("(");
+                        _criteria.Append(alias);
+                        _criteria.Append(" like '");
+                        Visit(m.Arguments[0]);
+                        _criteria.Append("%')");
+                    }
                 }
+
+                return m;
             }
 
             if ( m.Method.Name == "EndsWith" && m.Arguments.Count == 1 )
             {
-                var constantExpression = m.Object as ConstantExpression;
-                if ( constantExpression != null )
+                if (m.NodeType == ExpressionType.Call)
                 {
-                    _criteria.Append("(");
-                    Visit(m.Arguments[0]);
-                    _criteria.Append(" Like '%");
-                    _criteria.Append(constantExpression.Value.ToString());
-                    _criteria.Append("')");
+                    if (m.Object.NodeType == ExpressionType.MemberAccess)
+                    {
+                        var memberAccess = m.Object as MemberExpression;
+                        var memberName = memberAccess.Member.Name;
+                        ParameterExpression parameterExpression = null;
+                        ExtractParameterExpression(memberAccess, out parameterExpression);
+
+                        var alias = AcquireAlias(parameterExpression.Type, memberName);
+
+                        _criteria.Append("(");
+                        _criteria.Append(alias);
+                        _criteria.Append(" like '%");
+                        Visit(m.Arguments[0]);
+                        _criteria.Append("')");
+                    }
                 }
+
+                return m;
             }
 
             throw new NotSupportedException(string.Format("The method '{0}' is not supported", m.Method.Name));
@@ -292,14 +317,16 @@ namespace MicroORM.DataAccess.Querying.Impl
 
             if ( m.Expression.NodeType == ExpressionType.Parameter )
             {
-                string alias = AcquireAlias(m.Expression.Type, m.Expression.ToString());
+                string alias = AcquireAlias(m.Expression.Type, m.Member.Name);
                 _criteria.Append(string.Format("{0}.", alias));
                 _criteria.Append(m.Member.Name);
                 return m;
             }
             else if ( m.Expression.NodeType == ExpressionType.MemberAccess )
             {
-                ExtractExpression(m, m.Member.DeclaringType, m.Member.Name);
+                var alias = string.Empty;
+                ExtractExpression(m, m.Member.DeclaringType, m.Member.Name, out alias);
+                _criteria.Append(alias);
                 //string alias = AcquireAlias(m.Expression.Type.DeclaringType, m.Expression.ToString());
                 //_criteria.Append(string.Format("{0}.", alias));
                 //_criteria.Append(m.Member.Name);
@@ -310,8 +337,33 @@ namespace MicroORM.DataAccess.Querying.Impl
 
         }
 
-        private void ExtractExpression(MemberExpression expression, Type memberType, string memberName)
+        private void ExtractParameterExpression(Expression expression, out ParameterExpression parameterExpression)
         {
+            parameterExpression = null;
+
+            if ( parameterExpression != null )
+                return;
+
+            if ( expression != null )
+            {
+                if (expression is ParameterExpression)
+                {
+                    parameterExpression = expression as ParameterExpression;
+                    return;
+                }
+                else if ( expression is MemberExpression)
+                {
+                    var memberExpression = expression as MemberExpression;
+                    if ( memberExpression != null )
+                        ExtractParameterExpression(memberExpression.Expression, out parameterExpression);     
+                }
+            }
+        }
+
+        private void ExtractExpression(MemberExpression expression, Type memberType, string memberName, out string alias)
+        {
+            alias = string.Empty;
+
             if ( expression == null )
                 return;
 
@@ -321,28 +373,43 @@ namespace MicroORM.DataAccess.Querying.Impl
                 var component = MetaDataStore.GetTableInfo(memberType);
                 var column = component.Columns.FirstOrDefault(c => c.Column.Name == memberName);
 
-                var fullAlias = string.Format("[{0}].[{1}]",
+                alias = string.Format("[{0}].[{1}]",
                     table.TableName, column.DataColumnName);
-
-                _criteria.Append(fullAlias);
                 return;
             }
             else
             {
-                ExtractExpression(expression.Expression as MemberExpression, memberType, memberName);
+                ExtractExpression(expression.Expression as MemberExpression, memberType, memberName, out alias);
             }
         }
 
-        private string AcquireAlias(Type type, string toString)
+        private string AcquireAlias(Type type, string column = "")
         {
-            var table = MetaDataStore.GetTableInfo(type.DeclaringType);
-            return string.Format("[{0}]", table.TableName);
+            var table = MetaDataStore.GetTableInfo(type);
+
+            if ( string.IsNullOrEmpty(column) )
+                return string.Format("[{0}]", table.TableName);
+
+            var tableColumn = table.Columns.FirstOrDefault(c => c.Column.Name == column);
+
+            if (tableColumn == null)
+            {
+                tableColumn = (from component in table.Components
+                                         let componentColumn =  component.Column
+                                             .PropertyType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                                            .FirstOrDefault(p => p.Name == column) 
+                                        where componentColumn != null
+                                        select new ColumnInfo(this.MetaDataStore,  componentColumn.DeclaringType, componentColumn))
+                                        .FirstOrDefault();
+            }
+           
+            return string.Format("[{0}].[{1}]", table.TableName, tableColumn.DataColumnName);
         }
 
         private string GetNextParameter()
         {
             var index = Guid.NewGuid().ToString();
-            var counter = index.Replace("-",string.Empty);
+            var counter = index.Replace("-", string.Empty);
             var parameter = string.Format("_p{0}", counter);
             return parameter;
         }

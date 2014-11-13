@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using MicroORM.Configuration;
 using MicroORM.DataAccess.Extensions;
 using MicroORM.DataAccess.Hydrator;
 using MicroORM.DataAccess.Internals;
@@ -9,13 +10,14 @@ namespace MicroORM.DataAccess.Actions
 	public class InsertAction<TEntity> : DatabaseAction<TEntity>
 		where TEntity : class
 	{
-		private readonly IHydrator hydrator;
+		private readonly IHydrator _hydrator;
 
 		public InsertAction(IMetadataStore metadataStore, TEntity entity, 
-            IHydrator hydrator, IDbConnection connection, IDialect dialect) :
-			base(metadataStore, entity, connection, dialect)
+            IHydrator hydrator, IDbConnection connection, 
+            IDialect dialect, IEnvironmentSettings environment) :
+			base(metadataStore, entity, connection, dialect, environment)
 		{
-			this.hydrator = hydrator;
+			this._hydrator = hydrator;
 		}
 
 		public void Insert(TEntity entity)
@@ -31,11 +33,12 @@ namespace MicroORM.DataAccess.Actions
 
 				command.CommandText = query;
 				command.CreateAndAddInputParametersForColumns<TEntity>(entity, this.MetadataStore);
-				command.DisplayQuery();
 
-				if (this.hydrator != null)
+                this.DisplayCommand(command);
+
+				if (this._hydrator != null)
 				{
-					this.hydrator.InsertEntity<TEntity>(entity, command);
+					this._hydrator.InsertEntity<TEntity>(entity, command);
 				}
 			}
 		}
