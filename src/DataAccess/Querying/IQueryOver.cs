@@ -17,6 +17,8 @@ namespace MicroORM.DataAccess.Querying
             Expression<Func<TOther, object>> other)
             where TOther : class, new();
 
+        IQueryClause<TEntity, TEntity> Where(Expression<Func<TEntity, bool>> criteria);
+
         IQueryClause<TEntity,TOther> Where<TOther>(Expression<Func<TOther, bool>> criteria)
             where TOther : class, new();
     }

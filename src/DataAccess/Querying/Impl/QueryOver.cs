@@ -72,6 +72,12 @@ namespace MicroORM.DataAccess.Querying.Impl
             return clause;
         }
 
+        public IQueryClause<TEntity, TEntity> Where(Expression<Func<TEntity, bool>> criteria)
+        {
+            var clause = _queryDefinition.AddClause(criteria);
+            return clause;
+        }
+
         public IEnumerable<TEntity> Select()
         {
             var statement = string.Empty;

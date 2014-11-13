@@ -255,6 +255,29 @@ namespace MicroORM.DataAccess.Querying.Impl
                     _criteria.Append(ExtractCollection((ConstantExpression)m.Object));
                     _criteria.Append("))");
                 }
+                else
+                {
+                    if ( m.NodeType == ExpressionType.Call )
+                    {
+                        if ( m.Object.NodeType == ExpressionType.MemberAccess )
+                        {
+                            var memberAccess = m.Object as MemberExpression;
+                            var memberName = memberAccess.Member.Name;
+                            ParameterExpression parameterExpression = null;
+                            ExtractParameterExpression(memberAccess, out parameterExpression);
+
+                            var alias = AcquireAlias(parameterExpression.Type, memberName);
+
+                            _criteria.Append("(");
+                            _criteria.Append(alias);
+                            _criteria.Append(" like '%");
+                            Visit(m.Arguments[0]);
+                            _criteria.Append("%')");
+                        }
+                    }
+
+                    return m;    
+                }
 
                 return m;
             }
@@ -318,8 +341,9 @@ namespace MicroORM.DataAccess.Querying.Impl
             if ( m.Expression.NodeType == ExpressionType.Parameter )
             {
                 string alias = AcquireAlias(m.Expression.Type, m.Member.Name);
-                _criteria.Append(string.Format("{0}.", alias));
-                _criteria.Append(m.Member.Name);
+                _criteria.Append(alias);
+                //_criteria.Append(string.Format("{0}.", alias));
+                //_criteria.Append(m.Member.Name);
                 return m;
             }
             else if ( m.Expression.NodeType == ExpressionType.MemberAccess )

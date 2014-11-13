@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using MicroORM.Configuration.Impl;
 using MicroORM.DataAccess;
 using MicroORM.Tests.Domain.Models;
@@ -125,13 +126,17 @@ namespace MicroORM.Tests.Features.EntityMaps
 		public void can_find_entity_by_query_when_entity_is_defined_by_mapping_class()
 		{
             using ( var session = _factory.OpenSession(Connection) )
-			{
-				var department = session.CreateQueryFor<Department>()
-					.Select(SelectionOptions.AllFrom<Department>())
-					.CreateCriteria(Restrictions.Like<Department>(d => d.Description, "math"))
-					.SingleOrDefault();
+            using (var txn = session.BeginTransaction())
+            {
+                var department = new Department {Description = "Math", Name = "Math", Number = "101"};
+                session.Save(department);
+                txn.Commit();
 
-				Assert.NotNull(department);
+                var fromQuery = session.QueryOver<Department>()
+                    .Where((d) => d.Description == "Math")
+                    .Select().FirstOrDefault();
+
+                Assert.NotNull(fromQuery);
 			}
 		}
 	}

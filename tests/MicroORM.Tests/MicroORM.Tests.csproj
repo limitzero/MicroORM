@@ -64,8 +64,6 @@
     <Compile Include="Features\EntityMaps\EntityMapTests.cs" />
     <Compile Include="Features\Querying\QueryOverTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Features\Querying\ComplexQueryQueryTests.cs" />
-    <Compile Include="Features\Querying\LinqQueryQueryTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\MicroORM.csproj">

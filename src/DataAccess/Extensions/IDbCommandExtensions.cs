@@ -15,7 +15,7 @@ namespace MicroORM.DataAccess.Extensions
 		{
 			var parameter = command.CreateParameter();
 			parameter.Direction = ParameterDirection.Input;
-			parameter.ParameterName = parameterName;
+			parameter.ParameterName = parameterName.Replace("@", string.Empty);
 			parameter.DbType = databaseType;
 			parameter.Value = parameterValue;
 
@@ -111,7 +111,7 @@ namespace MicroORM.DataAccess.Extensions
 			{
 				var sqlParameter = command.CreateParameter();
 				sqlParameter.Direction = ParameterDirection.Input;
-				sqlParameter.ParameterName = parameter.Key;
+				sqlParameter.ParameterName = parameter.Key.Replace("@", string.Empty);
 				sqlParameter.DbType = TypeConverter.ConvertToDbType(parameter.Value.GetType());
 				sqlParameter.Value = parameter.Value;
 
