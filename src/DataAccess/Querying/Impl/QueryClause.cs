@@ -4,7 +4,6 @@ using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Security.Cryptography;
 using System.Text;
 using MicroORM.Configuration;
 using MicroORM.DataAccess.Actions;

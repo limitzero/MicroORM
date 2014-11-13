@@ -78,6 +78,7 @@
     <Compile Include="DataAccess\Querying\Impl\QueryOverDefinition.cs" />
     <Compile Include="DataAccess\Querying\Impl\QuerySubClause.cs" />
     <Compile Include="DataAccess\Querying\Impl\QuerySubClausePrefix.cs" />
+    <Compile Include="DataAccess\Querying\Joins\Impl\RightJoinAction.cs" />
     <Compile Include="DataAccess\Restrictions.cs" />
     <Compile Include="DataAccess\GroupByOptions.cs" />
     <Compile Include="DataAccess\Hydrator\IHydrator.cs" />

@@ -18,7 +18,7 @@ namespace MicroORM.Tests.Features.EntityMaps
 	    public EntityMapTests()
 	    {
 	         var configuration = new EnvironmentConfiguration();
-             _factory = configuration.BuildSessionFactory(this.GetType().Assembly);
+             _factory = configuration.BuildSessionFactory(Connection, this.GetType().Assembly);
 	    }
 
 	    public void Dispose()
@@ -31,7 +31,7 @@ namespace MicroORM.Tests.Features.EntityMaps
 	    [Fact]
 		public void can_use_entity_map_for_defining_entity_to_data_table_mapping()
 		{
-			using (var session = _factory.OpenSession(Connection))
+			using (var session = _factory.OpenSession())
 			using (var txn = session.BeginTransaction())
 			{
 				var student = new Student
@@ -66,7 +66,7 @@ namespace MicroORM.Tests.Features.EntityMaps
 		[Fact]
 		public void can_populate_parent_collection_lazily_on_select()
 		{
-            using ( var session = _factory.OpenSession(Connection) )
+            using ( var session = _factory.OpenSession() )
             {
                 var department = new Department();
                 department.Name = "Math";

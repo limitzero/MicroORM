@@ -1,5 +1,4 @@
 using System;
-using MicroORM.Dialects.Impl.SQLServer;
 
 namespace MicroORM.Tests.Features
 {

@@ -179,26 +179,11 @@ namespace MicroORM.DataAccess.Internals.Impl
             this._sessionCache.Remove(entity, tableInfo.GetPrimaryKeyValue(entity));
         }
 
-        public IQuery<T> CreateQueryFor<T>() where T : class, new()
-        {
-            this._metadataStore.AddEntity(typeof(T));
-            return new Querying.Impl.Query<T>(this._metadataStore, this._hydrator,
-                this._connection, _dialect, _environment);
-        }
-
         public IQueryOver<T> QueryOver<T>() where T : class, new()
         {
             var query = new QueryOver<T>(_metadataStore,
                 _hydrator, _connection, _dialect, _environment);
             return query;
-        }
-
-        [Obsolete]
-        private IQueryContext<T> QueryOverImpl<T>() where T : class, new()
-        {
-            this._metadataStore.AddEntity(typeof(T));
-            return new QueryContext<T>(this._metadataStore, this._hydrator,
-                this._connection, _dialect, _environment);
         }
 
         public IQueryByStoredProcedure ExecuteProcedure()

@@ -12,6 +12,7 @@ namespace MicroORM
 	{
 	    private readonly IEnvironmentSettings _environment;
 	    private readonly IMetadataStore _metadataStore;
+	    private readonly string _connectionString;
 	    private bool _disposed;
         private ConcurrentBag<ISession> _sessions;
 
@@ -25,27 +26,29 @@ namespace MicroORM
 		}
 
 	    public SessionFactory(IEnvironmentSettings environment, 
-            IMetadataStore metadataStore)
+            IMetadataStore metadataStore, 
+            string connectionString = "")
 	    {
 	        _environment = environment;
 	        _metadataStore = metadataStore;
+	        _connectionString = connectionString;
 
-            if(_metadataStore == null)
+	        if(_metadataStore == null)
                 _metadataStore = new MetadataStore();
 
             _sessions = new ConcurrentBag<ISession>();
 	    }
 
 	    public ISession OpenSession()
-		{
-            throw new NotImplementedException();
-            //var connectionString = MicroORM.Configuration.Instance.ConnectionProvider.GetConnectionString();
-            //var connection = new SqlConnection(connectionString);
-            //return new Session(connection, this.metadataStore);
-		}
+	    {
+	        return OpenSession(_connectionString);
+	    }
 
 		public ISession OpenSession(string connectionString)
 		{
+            if(string.IsNullOrEmpty(connectionString))
+                throw new ArgumentNullException("connectionString", "The connection string was not supplied.");
+
 		    var dialectFactory = new DialectFactory();
 		    var dialect = dialectFactory.Create(connectionString);
 

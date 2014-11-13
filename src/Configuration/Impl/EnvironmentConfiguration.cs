@@ -51,9 +51,22 @@ namespace MicroORM.Configuration.Impl
         /// using the entity maps defined in the assemblies as the representation of the entity to
         /// persistent object translation.
         /// </summary>
-        /// <param name="assemblies"></param>
+        /// <param name="assemblies">Assemblies that contain the persistent entities for a given data store</param>
         /// <returns></returns>
         public ISessionFactory BuildSessionFactory(params Assembly[] assemblies)
+        {
+            return BuildSessionFactory(string.Empty, assemblies);
+        }
+
+        /// <summary>
+        /// This will create a factory for generating persistence sessions to the defined data store
+        /// using the entity maps defined in the assemblies as the representation of the entity to
+        /// persistent object translation.
+        /// </summary>
+        /// <param name="connectionString">The connection information to the data store for the peristent entities</param>
+        /// <param name="assemblies">Assemblies that contain the persistent entities for a given data store</param>
+        /// <returns></returns>
+        public ISessionFactory BuildSessionFactory(string connectionString, params Assembly[] assemblies)
         {
             BuildEnvironment();
 
@@ -81,7 +94,7 @@ namespace MicroORM.Configuration.Impl
                 }
             }
 
-            var factory = new SessionFactory(_environmentSettings, metadatastore);
+            var factory = new SessionFactory(_environmentSettings, metadatastore, connectionString);
             return factory;
         }
 
