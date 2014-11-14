@@ -1,0 +1,3 @@
+Davey Brion for his articles on constructing a simple ORM ( http://thatextramile.be/blog )
+NHibernate for top-level API ideas (www.nhforge.org)
+Castle Project  for Dynamic Proxy creation (www.castleproject.org)
