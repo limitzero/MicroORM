@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using MicroORM.Configuration.Impl;
-using MicroORM.DataAccess;
 using MicroORM.Tests.Domain.Models;
 using Xunit;
 using Student = MicroORM.Tests.Domain.Models.Mapped.Student;

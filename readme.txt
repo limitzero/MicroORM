@@ -1,10 +1,5 @@
 ﻿MicroORM : A small framework for entity persistance
-
-Credits: 
-===========
-- LinqExtender (http://mehfuzh.github.com/LinqExtender/) - supporting LINQ querying ( no join support )
-- Davey Brion
-- LINQ-to-T-SQL Provider Framework - http://linqprovider.codeplex.com/
+===================================
 
 Entity Persistance
 -------------------
@@ -27,8 +22,8 @@ using(var txn = session.BeginTransaction())
     session.SaveOrUpdate(customer); 
     txn.Commit();
 	
-	var fromDB = session.Get<Customer>(customer.Id);
-	Assert.Equal(customer.Id, fromDB.Id);
+    var fromDB = session.Get<Customer>(customer.Id);
+    Assert.Equal(customer.Id, fromDB.Id);
 }
 
 
@@ -106,7 +101,7 @@ public class Customer
 public class Order
 {
     // this is a reference to the customer that created the order:
-    public Customer Customer {get; set;}
+    public virtual Customer Customer {get; set;}
 
     [PrimaryKey("orderId")]
     public virtual int Id {get; set;}
@@ -230,9 +225,9 @@ var factory = configuration.BuildFactory(this.GetType().Assembly);
 using(var session = factory.OpenSession("your connection"))
 using (var txn = session.BeginTransaction())
 {
-	var customer = session.Get<Customer>(1);
-	session.Delete(customer);
-	txn.Commit();	
+    var customer = session.Get<Customer>(1);
+    session.Delete(customer);
+    txn.Commit();	
 }
 
 
@@ -361,7 +356,7 @@ public class DomainModelPersistanceTests : IDisposable
         var configuration = new Configuration()
 
         this.factory = configuration.
-            .BuildSessionFactory(this.GetType().Assembly);
+            .BuildSessionFactory(Connection, this.GetType().Assembly);
     }
 
     public void Dispose()
@@ -372,7 +367,7 @@ public class DomainModelPersistanceTests : IDisposable
     [Fact]
     public void can_assign_policy_to_agent()
     {
-        using (var session = factory.OpenSession(Connection))
+        using (var session = factory.OpenSession())
         {
             var agent = new Agent();
             var policy = agent.CreatePolicy();
@@ -508,12 +503,12 @@ public interface IAdventureWorksNamedSession : INamedSession
 
 public sealed class ContosoNamedSession : IContosoNamedSession
 {
-	public ISession Session {get; set;}
+    public ISession Session {get; set;}
 }
 
 public sealed class AdventureWorksNamedSession : INamedSession
 {
-	public ISession Session {get; set;}
+    public ISession Session {get; set;}
 }
 
 public class MyConstosoComponent
@@ -538,6 +533,7 @@ public class MyConstosoComponent
 			catch
 			{
 				txn.Rollback();
+				throw;
 			}
 		}
 	}

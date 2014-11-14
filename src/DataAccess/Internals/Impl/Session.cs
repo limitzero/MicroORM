@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Data;
 using System.Linq;
-using LinqExtender;
 using MicroORM.Configuration;
 using MicroORM.DataAccess.Actions;
 using MicroORM.DataAccess.Extensions;
