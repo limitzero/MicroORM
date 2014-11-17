@@ -341,8 +341,6 @@ namespace MicroORM.DataAccess.Querying.Impl
             {
                 string alias = AcquireAlias(m.Expression.Type, m.Member.Name);
                 _criteria.Append(alias);
-                //_criteria.Append(string.Format("{0}.", alias));
-                //_criteria.Append(m.Member.Name);
                 return m;
             }
             else if ( m.Expression.NodeType == ExpressionType.MemberAccess )
@@ -350,9 +348,6 @@ namespace MicroORM.DataAccess.Querying.Impl
                 var alias = string.Empty;
                 ExtractExpression(m, m.Member.DeclaringType, m.Member.Name, out alias);
                 _criteria.Append(alias);
-                //string alias = AcquireAlias(m.Expression.Type.DeclaringType, m.Expression.ToString());
-                //_criteria.Append(string.Format("{0}.", alias));
-                //_criteria.Append(m.Member.Name);
                 return m;
             }
 

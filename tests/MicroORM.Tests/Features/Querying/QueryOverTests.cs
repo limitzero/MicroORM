@@ -48,7 +48,7 @@ namespace MicroORM.Tests.Features.Querying
                 var result = session.QueryOver<Department>()
                     .Join<Instructor>((d) => d.Id, (i) => i.Department.Id)
                     .Where<Instructor>((i) => i.Name.FirstName == "John")
-                    .And<Instructor>((i) => i.Name.LastName == "Smith")
+                    .And<Department>((i) => i.Name == "Test Query")
                     .Select().FirstOrDefault();
 
                 Assert.NotNull(result);
