@@ -17,12 +17,12 @@ MicroORM currently supports
 * SqlServerCE 4 
 * Sqlite 
 
-## User Friendly
-	Intuitive usage and native LINQ provider for accessing information via the model entities to your data store similar to EF and NH. 
+##User Friendly
+Intuitive usage and native LINQ provider for accessing information via the model entities to your data store similar to EF and NH. 
 
 ## Usage
  
- ### Entity Persistence
+###Entity Persistence
 
 The session (ISession) is the core part of entity persistance and retrieval, this works as the central 
 point of coordinating all data changes and implements IDisposable for appropriate scoping. Please be aware 
@@ -150,7 +150,7 @@ public class Order
 }
 ```
 
-###Entity Interception:
+###Entity Interception
 We can "intercept" calls to entities on insert, update and delete operations as a way to further extend how 
 we can handle certain cross cutting concerns and apply our own logic. 
 
@@ -387,7 +387,7 @@ public class DomainModelBehaviorTests
 public class DomainModelPersistanceTests : IDisposable
 {
     private ISessionFactory factory;
-    private const string Connection = "Data Source=.\SQLExpress;Initial Catalog=testdb;Integrated Security=SSPI";
+    private const string Connection = "Data Source=.\SQLExpress;Initial Catalog=testdb;";
 
     public DomainModelPersistanceTests()
     {
@@ -421,39 +421,34 @@ public class DomainModelPersistanceTests : IDisposable
 }
 ```
 
-Using MicroORM with an IOC/DI framework
--------------------------------------------------------
+##Using MicroORM with an IOC/DI framework
 
-The most challenging part of this configuration is how to generate an 
-instance of the session to have data persistance for the set of domain entities. 
-
-(1) Factory Extensions of DI/IOC framework
-==========================================
+###Factory Extensions of DI/IOC framework for generation of the session
 If the DI framework supports factory creation of objects, then we can use it to 
 generate an concrete instance of the session when the supporting object is resolved
 from the container:
 
-Ex (based on Castle Windsor as IoC):
+Example: (loosely based on Castle Windsor as IoC):
 
+```csharp
 public class Bootstrapper
 {
     private static ISessionFactory factory;
 
     public void Boot(IContainer container)
     {
-	var configuration = new Configuration();
+		var configuration = new Configuration();
 
-	var factory = configuration
-		.SearchForModels(this.GetType().Assembly);
-		.BuildSessionFactory()
+		var factory = configuration
+			.BuildSessionFactory(this.GetType().Assembly);
 
-	container.Register(Component.For<ISessionFactory>()
-		.Instance(factory));
+		container.Register(Component.For<ISessionFactory>()
+			.Instance(factory));
 			
-        	// now we need to define how to get the session from the container (simplistic declaration):
-        	container.Register(Component.For<ISession>()
-		.UsingFactory<ISessionFactory, ISession>( factory => factory.OpenSession("your connection string"))
-		.LifeStyleTransient());
+		// now we need to define how to get the session from the container (simplistic declaration):
+		container.Register(Component.For<ISession>()
+			.UsingFactory<ISessionFactory, ISession>( factory => factory.OpenSession("your connection string"))
+			.LifeStyleTransient());
     }
 }
 
@@ -472,71 +467,79 @@ public class MyFacade
         var entity = session.CreateQuery<..>();
     }
 }
+```
 
 The line below will inject the session into the component upon retrieval from the container:
 
+```csharp
 var facade = IContainer.Resolve<MyFacade>(); 
 facade.DoSomeWork(); 
 IContainer.Release(facade); // only if container can support it... 
+```
 
 
-Using MicroORM with multiple databases:
--------------------------------------------------------
-OK, here is the "pratical" part of using the MicroORM, most applications will need to interface
+##Using MicroORM with multiple databases:
+OK, here is the "pratical" part of using the MicroORM...most applications will need to interface
 with different databases as a normal part of completing business processing. In order to do this, 
 all you have to do is add your connection strings to the settings file and create "named" sessions
 via the connection string and implementation. 
 
+For example, if we have an application configuration file with the following settings:
+
 <configuration>
 	<appSettings>
-		<add key="Contoso" value="Data Source=.\SQLExpress;Initial Catalog=Contoso;Integrated Security=SSPI" />
-		<add key="AdventureWorks" value="Data Source=.\SQLExpress;Initial Catalog=AdventureWorks;Integrated Security=SSPI" />
+		<add key="Contoso" value="Data Source=.\SQLExpress;Initial Catalog=Contoso;" />
+		<add key="AdventureWorks" value="Data Source=.\SQLExpress;Initial Catalog=AdventureWorks;" />
 	</appSettings>
 </configuration>
 
 and in code, you can do the following:
 
+```csharp
 public class Bootstrapper
 {
     public void Boot(IContainer container)
     {
-	IConfiguration configuration = new Configuration();
+		IConfiguration configuration = new Configuration();
 
-	var contoso = ConfigurationManager.AppSettings.Get("Contoso"); 
-	var adventureWorks = ConfigurationManager.AppSettings.Get("AdventureWorks"); 
+		var contoso = ConfigurationManager.AppSettings.Get("Contoso"); 
+		var adventureWorks = ConfigurationManager.AppSettings.Get("AdventureWorks"); 
 
-	configuration
-	    .RegisterNamedSession<IContosoNamedSession, ContosoNamedSession>(contoso, this.GetType().Assembly)
-		.RegisterNamedSession<IAdventureWorksNamedSession, AdventureWorksNamedSession>(adventureWorks,
-             "AdventureWorks.Infrastructure");  // has the entity maps for domain entities
+		configuration
+			.RegisterNamedSession<IContosoNamedSession, ContosoNamedSession>(contoso, "assembly to entities for contoso")
+			.RegisterNamedSession<IAdventureWorksNamedSession, AdventureWorksNamedSession>(adventureWorks,
+             "assembly to entities for adventure works");  
 		
-	container.Register(Component.For<IConfiguration>()
-		.Instance(configuration));
+		container.Register(Component.For<IConfiguration>()
+			.Instance(configuration));
 			
-    container.Register(Component.For<IContosoNamedSession>()
-		.UsingFactory<IConfiguration, IContosoNamedSession>( cfg=> cfg.NamedSessionContainer.Resolve<IContosoNamedSession>()))
-		.LifeStyleTransient());
+		container.Register(Component.For<IContosoNamedSession>()
+			.UsingFactory<IConfiguration, IContosoNamedSession>( cfg=> cfg.NamedSessionContainer.Resolve<IContosoNamedSession>()))
+			.LifeStyleTransient());
 
-     container.Register(Component.For<IAdventureWorksNamedSession>()
-		.UsingFactory<IConfiguration, IAdventureWorksNamedSession>( cfg=> cfg.NamedSessionContainer.Resolve<IAdventureWorksNamedSession>()))
-		.LifeStyleTransient());
+		container.Register(Component.For<IAdventureWorksNamedSession>()
+			.UsingFactory<IConfiguration, IAdventureWorksNamedSession>( cfg=> cfg.NamedSessionContainer.Resolve<IAdventureWorksNamedSession>()))
+			.LifeStyleTransient());
 
-	container.Register(Component.For<MyContosoComponent>()
-		.ImplementedBy<MyContosoComponent>()
-		.LifeStyleTransient());
+		container.Register(Component.For<MyContosoComponent>()
+			.ImplementedBy<MyContosoComponent>()
+			.LifeStyleTransient());
 
-	container.Register(Component.For<MyAdventureWorksComponent>()
-		.ImplementedBy<MyAdventureWorksComponent>()
-		.LifeStyleTransient());
+		container.Register(Component.For<MyAdventureWorksComponent>()
+			.ImplementedBy<MyAdventureWorksComponent>()
+			.LifeStyleTransient());
     }
-
 }
+```
 
 and somewhere in code you will have....
 
+```csharp
+// this is the named session instance marker to the Constoso database
 public interface IContosoNamedSession : INamedSession
 {}
 
+// this is the named session instance marker to the AdventureWorks database
 public interface IAdventureWorksNamedSession : INamedSession
 {}
 
@@ -550,7 +553,7 @@ public sealed class AdventureWorksNamedSession : INamedSession
     public ISession Session {get; set;}
 }
 
-public class MyConstosoComponent
+public class MyConstosoComponent : IDisposable
 {
 	private  IContosoNamedSession namedSession;
 
@@ -559,6 +562,14 @@ public class MyConstosoComponent
 		this.namedSession = namedSession;
 	}
 
+	public void Disposable()
+	{
+		if(namedSession != null && namedSession.Session != null)
+		{
+			namedSession.Session.Dispose();
+		}
+	}
+	
 	public void DoWork()
 	{
 		using(var txn = _namedSession.Session.BeginTransaction())
@@ -578,7 +589,7 @@ public class MyConstosoComponent
 	}
 }
 
-public class MyAdventureWorksComponent
+public class MyAdventureWorksComponent : IDisposable
 {
 	private IAdventureWorksNamedSession namedSession;
 
@@ -587,6 +598,14 @@ public class MyAdventureWorksComponent
 		this.namedSession = namedSession;
 	}
 
+	public void Disposable()
+	{
+		if(namedSession != null && namedSession.Session != null)
+		{
+			namedSession.Session.Dispose();
+		}
+	}
+	
 	public void DoWork()
 	{
 		using(var txn = _namedSession.Session.BeginTransaction())
@@ -604,12 +623,13 @@ public class MyAdventureWorksComponent
 		}
 	}
 }
+```
 
-Using the DAO/Repository pattern with the session
-==============================================
-Some people may want to use a DAO/Repository for abstraction over the session
+##Using the DAO/Repository pattern with the session
+Some people may want to use a DAO/Repository for abstraction over the session or named session instance for data access encapsulation in their code bases. We can accomplish the "spirit" of this as follows:
 
-public class ConstosoRepository : IContosoRepository
+```csharp
+public class ConstosoRepository : IContosoRepository, IDisposable
 {
 	private  IContosoNamedSession namedSession;
 
@@ -618,12 +638,22 @@ public class ConstosoRepository : IContosoRepository
 		this.namedSession = namedSession;
 	}	
 	
+	public void Disposable()
+	{
+		if(namedSession != null && namedSession.Session != null)
+		{
+			namedSession.Session.Dispose();
+		}
+	}
+	
 	// your use cases for data retreival .....
 }
+```
 
 and 
 
-public class AdventureWorksRepository : IAdventureWorksRepository
+```csharp
+public class AdventureWorksRepository : IAdventureWorksRepository, IDisposable
 {
 	private  IAdventureWorksNamedSession namedSession;
 
@@ -632,10 +662,51 @@ public class AdventureWorksRepository : IAdventureWorksRepository
 		this.namedSession = namedSession;
 	}	
 	
+	public void Disposable()
+	{
+		if(namedSession != null && namedSession.Session != null)
+		{
+			namedSession.Session.Dispose();
+		}
+	}
+	
 	// your use cases for data retreival .....
 }
+```
 
 with registrations like previous use case for components....
+
+##Querying using custom provider 
+
+Querying over entities is relatively straight forward with LINQ support behind the scenes:
+
+```csharp
+
+using ( var session = _factory.OpenSession("your connection string") )
+using ( var txn = session.BeginTransaction())
+{
+	var department = new Department
+	{
+		Description = "Test",
+		Name = "Test",
+		Number = "101"
+	};
+
+	var instructor = department.CreateInstructor();
+	instructor.Name.Change("Test", "Test");
+
+	session.Save(department);
+	txn.Commit();
+
+	var result = session.QueryOver<Department>()
+		.Join<Instructor>((d) => d.Id, (i) => i.Department.Id)
+		.Where<Instructor>((i) => i.Name.FirstName == "Test")
+		.And<Department>((i) => i.Name == "Test")
+		.Select().FirstOrDefault();
+}
+```
+
+TODO: Multi-map queries for projections into custom models for viewing
 
 
 Eat, Drink and Enjoy...
