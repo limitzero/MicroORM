@@ -1,15 +1,37 @@
-﻿MicroORM : A small framework for entity persistance
-===================================
+﻿#Welcome to MicroORM
 
-Entity Persistance
--------------------
+MicroORM is a **_versatile_** micro-orm (i.e Dapper.Net, PetaPoco, Massive, etc) for .NET 4+. Currently the project is not licensed but that wil be remedied shortly :)
+
+If you are wondering "Why is this guy creating yet another micro-orm for data persistence" it was created solely as a learning project about how NHibernate works 
+and what would it take to get a bare-bones ORM off the ground to accomodate simple persistence.  This sits in the middle-space of micro-orm and full-blown orms like NH and EF allowing you to expand your data persistence needs up or down as your application grows.
+
+## Why should you use it
+The unqiue part of  why you would want to use this library is an entry-level option into NHibernate without all of the nuances that NHibernate brings for simple persistence. If at any time you need the full power of NHibernate, switching to its native 
+API should be relatively painless but some effort will be required. 
+
+The main reason that this library was designed is that most orms treat applications as if only one database will be involved for all data persistence and retreival.  MicroORM understands that the majority of applications will retrieve and store data to differing databases
+and has built-in configuration extensions and markers to allow for this. 
+
+MicroORM currently supports
+* SqlServer 2005+
+* SqlServerCE 4 
+* Sqlite 
+
+## User Friendly
+	Intuitive usage and native LINQ provider for accessing information via the model entities to your data store similar to EF and NH. 
+
+## Usage
+ 
+ ### Entity Persistence
+
 The session (ISession) is the core part of entity persistance and retrieval, this works as the central 
 point of coordinating all data changes and implements IDisposable for appropriate scoping. Please be aware 
 that the library uses "lazy-loading" in the scope of the session to pull referenced entities and entity 
 collections on the entity being manipulated. 
 
-Ex: Saving a new instance of an entity
+```csharp
 
+// saving an entity:
 using(var session = SessionFactory.OpenSession())
 using(var txn = session.BeginTransaction())
 {
@@ -25,10 +47,11 @@ using(var txn = session.BeginTransaction())
     var fromDB = session.Get<Customer>(customer.Id);
     Assert.Equal(customer.Id, fromDB.Id);
 }
+```
 
+```csharp
 
-Ex: Fetching an entity and updating
-
+// fetching an entity and updating
 using(var session = SessionFactory.OpenSession())
 using(var txn = session.BeginTransaction())
 {
@@ -43,8 +66,10 @@ using(var txn = session.BeginTransaction())
 	
     txn.Commit();
 }
+```
 
-Ex: Fetching an entity and updating underlying collections:
+```csharp
+// fetching an entity and updating underlying collections:
 
 using (var session = SessionFactory.OpenSession())
 using (var txn = session.BeginTransaction())
@@ -62,8 +87,10 @@ using (var txn = session.BeginTransaction())
 
     txn.Commit();
 }
+```
 
-Ex:  Entities
+```csharp
+// entities
 
 [Table()]
 public class Customer
@@ -121,10 +148,9 @@ public class Order
         this.Customer = customer;
     }
 }
+```
 
-
-Entity Interception:
----------------------
+###Entity Interception:
 We can "intercept" calls to entities on insert, update and delete operations as a way to further extend how 
 we can handle certain cross cutting concerns and apply our own logic. 
 
@@ -136,6 +162,7 @@ To do this we first create a class and derive its implementation from IDeleteInt
 
 First, let's create an interface that models the overall behavior that we want on the entity:
 
+```csharp
 public interface IAuditable
 {
     // for updates:
@@ -150,9 +177,11 @@ public interface IAuditable
     int DeletedBy {get; set;}
     Datetime? DeletionDate {get; set;}
 }
+```
 
 Next, let's create a plain class that holds this information:
 
+```csharp
 public class Auditable : IAuditable
 {
     [Column("createdById")]
@@ -173,17 +202,20 @@ public class Auditable : IAuditable
     [Column("deletionDate")]
     public Datetime? DeletionDate {get; set:}
 }
+```
 
 For each entity that is to be peristed and audited, let's inherit from the auditable parent class
 
+```csharp
 public class Customer : Auditable
 {
     // other properties plus auditable....
 }
-
+```
 
 Now, let's define the interceptor to handle deleting of entities:
 
+```csharp
 public class MarkAsUnavailableOnDeleteInterceptor : IDeleteInterceptor
 {
     public bool OnPreDelete(IDataInvocation invocation)
@@ -209,12 +241,14 @@ public class MarkAsUnavailableOnDeleteInterceptor : IDeleteInterceptor
     }
 
 }
+```
 
 Finally, in using the ORM, we set the Configuration object with the interceptor to 
 use on delete operations:
 
 Ex: 
 
+```csharp
 var configuration = new Configuration();
 
 // you must register the interceptors before building the factory...
@@ -229,19 +263,19 @@ using (var txn = session.BeginTransaction())
     session.Delete(customer);
     txn.Commit();	
 }
-
+```
 
 Now on all deletes, the entity will be updated but not removed...
 
 
-Entity Mapping (POCO style on domain model)
---------------------------------------------------
+### Entity Mapping (POCO style on domain model)
 In order to reduce the noise on the domain model and remove the declarative style of 
 identifying columns, primary keys etc. on the entity, we can add external mapping 
 classes. 
 
 Ex: Creating a mapping for a simple class
 
+```csharp
 public class Invoice 
 {
     public virtual int Id {get; set;}
@@ -257,12 +291,14 @@ public class InvoiceMap : EntityMap<Invoice>
         HasColumn( c=>c.InvoiceNumber, "invoiceNumber"); // define the data column to map to the class property
     }
 }
+```
 
 Ex: Creating an entity with associations 
 
  - An insurance policy is assigned an agent (the policy can not be created without an existing agent)
  - An agent has zero or more policies to manage for existing customers
 
+ ```csharp
 public class Agent
 {
     public virtual int Id {get; set;}   
@@ -327,9 +363,11 @@ public class PolicyEntityMap : EntityMap<Policy>
         HasReference(r=>r.Agent); // a policy is assigned to an agent
     }
 }
+```
 
-Unit testing our model...
+Unit testing our model, we have something like this...
 
+```csharp
 public class DomainModelBehaviorTests
 {
     [Fact]
@@ -381,6 +419,7 @@ public class DomainModelPersistanceTests : IDisposable
         }
     }
 }
+```
 
 Using MicroORM with an IOC/DI framework
 -------------------------------------------------------
